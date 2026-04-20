@@ -24,26 +24,39 @@
  *
  */
 
-import { OverlayRef } from '@angular/cdk/overlay';
-import { Component, OnInit, OnDestroy, ViewChild, ComponentFactoryResolver } from '@angular/core';
-import { Router } from '@angular/router';
-import { EuiLoadingService, EuiSplashScreenService, EuiTheme, EuiThemeService } from '@elemental-ui/core';
-import { Subscription } from 'rxjs';
+import { OverlayRef } from "@angular/cdk/overlay";
+import {
+  Component,
+  ComponentFactoryResolver,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+} from "@angular/core";
+import { Router } from "@angular/router";
+import {
+  EuiLoadingService,
+  EuiSplashScreenService,
+  EuiTheme,
+  EuiThemeService,
+} from "@elemental-ui/core";
+import { Subscription } from "rxjs";
 
-import { Globals } from 'imx-qbm-dbts';
-import { ISessionState } from '../session/session-state';
-import { AuthenticationService } from '../authentication/authentication.service';
-import { AppConfigService } from '../appConfig/appConfig.service';
-import { AuthConfigProvider } from '../authentication/auth-config-provider.interface';
-import { ClassloggerService } from '../classlogger/classlogger.service';
-import { ExtDirective } from '../ext/ext.directive';
-import { SystemInfoService } from '../system-info/system-info.service';
-import { HighContrastModeDetector } from '@angular/cdk/a11y';
+import { HighContrastModeDetector } from "@angular/cdk/a11y";
+import { Globals } from "imx-qbm-dbts";
+import { AppConfigService } from "../appConfig/appConfig.service";
+import { AuthConfigProvider } from "../authentication/auth-config-provider.interface";
+import { AuthenticationService } from "../authentication/authentication.service";
+import { ClassloggerService } from "../classlogger/classlogger.service";
+import { ExtDirective } from "../ext/ext.directive";
+import { ISessionState } from "../session/session-state";
+import { SystemInfoService } from "../system-info/system-info.service";
+
+import { TranslateService } from "@ngx-translate/core";
 
 @Component({
-  selector: 'imx-login',
-  templateUrl: './login.component.html',
-  styleUrls: ['./login.component.scss'],
+  selector: "imx-login",
+  templateUrl: "./login.component.html",
+  styleUrls: ["./login.component.scss"],
 })
 export class LoginComponent implements OnInit, OnDestroy {
   @ViewChild(ExtDirective, { static: true }) public directive: ExtDirective;
@@ -60,8 +73,10 @@ export class LoginComponent implements OnInit, OnDestroy {
   public logoUrl: string;
   public newUserConfigProvider: AuthConfigProvider;
 
-  private readonly newUserConfigProviderName = 'NewUser';
-  private readonly authProviderStorageKey = 'selectedAuthProvider';
+  private loginNote: string;
+
+  private readonly newUserConfigProviderName = "NewUser";
+  private readonly authProviderStorageKey = "selectedAuthProvider";
   private readonly subscriptions: Subscription[] = [];
 
   constructor(
@@ -74,62 +89,81 @@ export class LoginComponent implements OnInit, OnDestroy {
     private readonly splash: EuiSplashScreenService,
     private readonly busyService: EuiLoadingService,
     private readonly themeService: EuiThemeService,
-    private readonly detector: HighContrastModeDetector
+    private readonly detector: HighContrastModeDetector,
+    private readonly translate: TranslateService,
   ) {
+    this.translate
+      .get("#LDS#Login note")
+      .subscribe((trans: string) => (this.loginNote = trans));
     this.title = this.appConfigService.Config.Title;
     this.subscriptions.push(
       this.appConfigService.onConfigTitleUpdated.subscribe(() => {
         this.title = this.appConfigService.Config.Title;
-      })
+      }),
     );
 
     this.subscriptions.push(
-      this.authentication.onSessionResponse.subscribe((sessionState: ISessionState) => {
-        this.logger.debug(this, 'LoginComponent - subscription - onSessionResponse');
-        this.logger.trace(this, 'sessionState', sessionState);
-        const existingConfig = this.sessionState?.configurationProviders;
-        this.sessionState = sessionState;
-        if (this.sessionState.IsLoggedIn) {
-          this.logger.debug(this, 'subscription - call navigate');
-          this.router.navigate([this.appConfigService.Config.routeConfig.start], { queryParams: {} });
-        } else {
-          // Cover the case where an error has occurred and the new sessionState does not contain the configurationProviders
-          if (!this.sessionState.configurationProviders) {
-            // fallback to the previous known configuration, so the login form fields can still be displayed
-            this.logger.debug(this, 'subscription - no new session config, falling back to previous');
-            this.sessionState.configurationProviders = existingConfig;
-          }
+      this.authentication.onSessionResponse.subscribe(
+        (sessionState: ISessionState) => {
+          this.logger.debug(
+            this,
+            "LoginComponent - subscription - onSessionResponse",
+          );
+          this.logger.trace(this, "sessionState", sessionState);
+          const existingConfig = this.sessionState?.configurationProviders;
+          this.sessionState = sessionState;
+          if (this.sessionState.IsLoggedIn) {
+            this.logger.debug(this, "subscription - call navigate");
+            this.router.navigate([this.appConfigService.Config.routeConfig.start], {
+              queryParams: {},
+            });
+          } else {
+            // Cover the case where an error has occurred and the new sessionState does not contain the configurationProviders
+            if (!this.sessionState.configurationProviders) {
+              // fallback to the previous known configuration, so the login form fields can still be displayed
+              this.logger.debug(
+                this,
+                "subscription - no new session config, falling back to previous",
+              );
+              this.sessionState.configurationProviders = existingConfig;
+            }
 
-          this.buildConfigurationProviders();
+            this.buildConfigurationProviders();
 
-          if (this.sessionState.configurationProviders && this.sessionState.configurationProviders.length > 0) {
-            this.logger.debug(this, 'subscription - updating session config');
-            this.selectedConfigProvider =
-              this.sessionState.configurationProviders.find(
-                (authProvider) => authProvider.name === localStorage.getItem(this.authProviderStorageKey)
-              ) || this.sessionState.configurationProviders[0];
-            this.onSelectAuthConfig();
+            if (
+              this.sessionState.configurationProviders &&
+              this.sessionState.configurationProviders.length > 0
+            ) {
+              this.logger.debug(this, "subscription - updating session config");
+              this.selectedConfigProvider =
+                this.sessionState.configurationProviders.find(
+                  (authProvider) =>
+                    authProvider.name ===
+                    localStorage.getItem(this.authProviderStorageKey),
+                ) || this.sessionState.configurationProviders[0];
+              this.onSelectAuthConfig();
+            }
           }
-        }
-      })
+        },
+      ),
     );
   }
 
   public async logoutOAuth(): Promise<void> {
-    this.logger.debug(this, 'logoutOAuth');
+    this.logger.debug(this, "logoutOAuth");
     return this.authentication.logout(this.sessionState);
   }
 
   public async login(): Promise<void> {
-    this.logger.debug(this, 'LoginComponent - login');
+    this.logger.debug(this, "LoginComponent - login");
 
     if (this.selectedConfigProvider) {
       if (this.selectedConfigProvider.isOAuth2) {
-        this.logger.debug(this, 'LoginComponent - login - oauth2');
+        this.logger.debug(this, "LoginComponent - login - oauth2");
         await this.authentication.oauthRedirect(this.selectedConfigProvider.name);
         return;
       } else if (this.selectedConfigProvider.customAuthFlow) {
-        throw new Error('Method not valid for a custom auth flow.');
+        throw new Error("Method not valid for a custom auth flow.");
       }
     }
 
@@ -138,7 +172,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     try {
       await this.authentication.login(this.loginData);
     } finally {
-      this.logger.debug(this, 'LoginComponent - login - attempt completed');
+      this.logger.debug(this, "LoginComponent - login - attempt completed");
       setTimeout(() => this.busyService.hide(overlayRef));
     }
 
@@ -148,9 +182,12 @@ export class LoginComponent implements OnInit, OnDestroy {
   public async ngOnInit(): Promise<void> {
     const config = await this.systemInfoService.getImxConfig();
     if (config.DefaultHtmlTheme) {
-      if (config.DefaultHtmlTheme === 'eui-auto-theme' && this.detector.getHighContrastMode() > 0) {
+      if (
+        config.DefaultHtmlTheme === "eui-auto-theme" &&
+        this.detector.getHighContrastMode() > 0
+      ) {
         this.themeService.setTheme(EuiTheme.CONTRAST);
-      } else if (this.title === 'Administration Portal') {
+      } else if (this.title === "Administration Portal") {
         this.themeService.setTheme(EuiTheme.LIGHT);
       } else {
         this.themeService.setTheme(<EuiTheme>config.DefaultHtmlTheme);
@@ -158,7 +195,10 @@ export class LoginComponent implements OnInit, OnDestroy {
     }
     if (config.CompanyLogoUrl) {
       // make relative URL absolute if needed
-      this.logoUrl = new URL(config.CompanyLogoUrl, this.appConfigService.BaseUrl).href;
+      this.logoUrl = new URL(
+        config.CompanyLogoUrl,
+        this.appConfigService.BaseUrl,
+      ).href;
     }
     const name = config.ProductName;
     if (name) {
@@ -174,8 +214,15 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   public onSelectAuthConfig(): void {
-    this.logger.debug(this, 'LoginComponent - onSelectAuthConfig', this.selectedConfigProvider.name);
-    localStorage.setItem(this.authProviderStorageKey, this.selectedConfigProvider.name);
+    this.logger.debug(
+      this,
+      "LoginComponent - onSelectAuthConfig",
+      this.selectedConfigProvider.name,
+    );
+    localStorage.setItem(
+      this.authProviderStorageKey,
+      this.selectedConfigProvider.name,
+    );
     this.loginData = { Module: this.selectedConfigProvider.name };
     this.initCustomAuthFlowView(this.selectedConfigProvider);
   }
@@ -189,7 +236,9 @@ export class LoginComponent implements OnInit, OnDestroy {
       }
     });
 
-    const newUserIndex = providers.findIndex((x) => x.name === this.newUserConfigProviderName);
+    const newUserIndex = providers.findIndex(
+      (x) => x.name === this.newUserConfigProviderName,
+    );
     if (newUserIndex > -1) {
       // Remove the newuser provider from the list, it isn't a dropdown option but rather a button
       [this.newUserConfigProvider] = providers.splice(newUserIndex, 1);
@@ -197,14 +246,19 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.configurationProviders = providers;
   }
 
-  private initCustomAuthFlowView(configProvider: AuthConfigProvider, shouldClear = true): void {
+  private initCustomAuthFlowView(
+    configProvider: AuthConfigProvider,
+    shouldClear = true,
+  ): void {
     if (this.directive) {
       if (shouldClear) {
         this.directive.viewContainerRef.clear();
       }
       if (configProvider?.customAuthFlow) {
         this.directive.viewContainerRef.createComponent(
-          this.componentFactoryResolver.resolveComponentFactory(configProvider.customAuthFlow.getEntryComponent())
+          this.componentFactoryResolver.resolveComponentFactory(
+            configProvider.customAuthFlow.getEntryComponent(),
+          ),
         );
       }
     }
