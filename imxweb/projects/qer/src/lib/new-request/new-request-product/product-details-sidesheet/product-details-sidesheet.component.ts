@@ -28,7 +28,7 @@ import { Clipboard } from '@angular/cdk/clipboard';
 import { Component, Inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { EUI_SIDESHEET_DATA } from '@elemental-ui/core';
-import { PortalServiceitems, QerProjectConfig } from '@imx-modules/imx-api-qer';
+import { PortalServicecategories, PortalServiceitems, QerProjectConfig } from '@imx-modules/imx-api-qer';
 import { TranslateService } from '@ngx-translate/core';
 import { HELP_CONTEXTUAL, LdsReplacePipe, SnackBarService } from 'qbm';
 import { NEW_REQUEST_ROUTE } from '../../constants';
@@ -65,6 +65,8 @@ export class ProductDetailsSidesheetComponent implements OnInit {
     @Inject(EUI_SIDESHEET_DATA)
     public data: {
       item: PortalServiceitems;
+      serviceCategory?: PortalServicecategories;
+      parentServiceCategory?: PortalServicecategories;
       orderStatus: {
         statusIcon: string;
         statusDisplay: string;

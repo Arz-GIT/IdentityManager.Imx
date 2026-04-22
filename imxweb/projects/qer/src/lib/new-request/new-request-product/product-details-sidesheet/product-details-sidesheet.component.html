@@ -18,6 +18,34 @@
                 </div>
               </div>
             }
+            @if (data.parentServiceCategory) {
+              <div class="details-item">
+                <div class="details-label">{{ data.parentServiceCategory.Description.Column.GetMetadata().GetDisplay() }}:</div>
+                <div class="details-value">
+                  {{ data.parentServiceCategory.Description.Column.GetDisplayValue() || ('#LDS#Not set' | translate) }}
+                </div>
+              </div>
+              <div class="details-item">
+                <div class="details-label">{{ data.parentServiceCategory.Remarks.Column.GetMetadata().GetDisplay() }}:</div>
+                <div class="details-value">
+                  {{ data.parentServiceCategory.Remarks.Column.GetDisplayValue() || ('#LDS#Not set' | translate) }}
+                </div>
+              </div>
+            }
+            @if (data.serviceCategory) {
+              <div class="details-item">
+                <div class="details-label">{{ data.serviceCategory.Description.Column.GetMetadata().GetDisplay() }}:</div>
+                <div class="details-value">
+                  {{ data.serviceCategory.Description.Column.GetDisplayValue() || ('#LDS#Not set' | translate) }}
+                </div>
+              </div>
+              <div class="details-item">
+                <div class="details-label">{{ data.serviceCategory.Remarks.Column.GetMetadata().GetDisplay() }}:</div>
+                <div class="details-value">
+                  {{ data.serviceCategory.Remarks.Column.GetDisplayValue() || ('#LDS#Not set' | translate) }}
+                </div>
+              </div>
+            }
             <!-- the following properties can be customized in the Adminportal -> ServerConfig/ITShopConfig/AccProductProperties -->
             @for (property of accProductProperties; track property) {
               <div class="details-item">

@@ -29,10 +29,12 @@ import { SafeUrl } from '@angular/platform-browser';
 import { EuiSidesheetService } from '@elemental-ui/core';
 import { TranslateService } from '@ngx-translate/core';
 
+import { PortalServicecategories } from '@imx-modules/imx-api-qer';
 import { IWriteValue, MultiValue, TypedEntity } from '@imx-modules/imx-qbm-dbts';
 import { LdsReplacePipe, calculateSidesheetWidth } from 'qbm';
 import { ImageService } from '../../../itshop/image.service';
 import { ProjectConfigurationService } from '../../../project-configuration/project-configuration.service';
+import { ServiceCategoriesService } from '../../../service-categories/service-categories.service';
 import { ProductDetailsSidesheetComponent } from './product-details-sidesheet.component';
 
 @Injectable({
@@ -45,12 +47,14 @@ export class ProductDetailsService {
     private readonly sidesheetService: EuiSidesheetService,
     private readonly translateService: TranslateService,
     private readonly projectConfigService: ProjectConfigurationService,
+    private readonly serviceCategoriesService: ServiceCategoriesService,
   ) {}
 
   public async showProductDetails(item: TypedEntity, recipients: IWriteValue<string>): Promise<void> {
     const projectConfig = await this.projectConfigService.getConfig();
 
     const orderStatus = await this.getOrderStatus(item, recipients);
+    const serviceCategoryDetails = await this.getServiceCategoryDetails(item);
     await this.sidesheetService
       .open(ProductDetailsSidesheetComponent, {
         title: await this.translateService.instant('#LDS#Heading View Product Details'),
@@ -61,6 +65,8 @@ export class ProductDetailsService {
         testId: 'product-details-sidesheet',
         data: {
           item,
+          serviceCategory: serviceCategoryDetails.serviceCategory,
+          parentServiceCategory: serviceCategoryDetails.parentServiceCategory,
           orderStatus: orderStatus,
           imageUrl: this.getProductImage(item),
           projectConfig,
@@ -115,6 +121,29 @@ export class ProductDetailsService {
           statusIcon: 'error',
           statusDisplay: await this.translateService.instant('#LDS#This product is already in your shopping cart.'),
         };
+    }
+  }
+
+  private async getServiceCategoryDetails(item: TypedEntity): Promise<{
+    serviceCategory?: PortalServicecategories;
+    parentServiceCategory?: PortalServicecategories;
+  }> {
+    try {
+      const uidAccProductGroup = item.GetEntity().GetColumn('UID_AccProductGroup').GetValue() as string;
+      if (!uidAccProductGroup) {
+        return {};
+      }
+
+      const serviceCategory = (await this.serviceCategoriesService.getById(uidAccProductGroup))?.Data?.[0];
+      const parentUid = serviceCategory?.UID_AccProductGroupParent?.value;
+      if (!parentUid) {
+        return { serviceCategory };
+      }
+
+      const parentServiceCategory = (await this.serviceCategoriesService.getById(parentUid))?.Data?.[0];
+      return { serviceCategory, parentServiceCategory };
+    } catch {
+      return {};
     }
   }
 }
