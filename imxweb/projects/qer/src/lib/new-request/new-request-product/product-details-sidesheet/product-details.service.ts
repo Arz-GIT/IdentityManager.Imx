@@ -68,7 +68,7 @@ export class ProductDetailsService {
 
     const orderStatus = await this.getOrderStatus(item, recipients);
 
-    // Get service category details (service category and parent service category) for the given product item.
+    // Load the assigned service category plus its parent so the sidesheet can show both levels.
     const serviceCategoryDetails = await this.getServiceCategoryDetails(item);
 
     await this.sidesheetService
@@ -160,7 +160,7 @@ export class ProductDetailsService {
     }
   }
 
-  // Gets the service category and its parent category (if available) for the given product item.
+  // Resolve the product's service category chain once and pass the result to the UI.
   private async getServiceCategoryDetails(item: PortalShopServiceitems): Promise<{
     serviceCategory?: PortalServicecategories;
     parentServiceCategory?: PortalServicecategories;
@@ -176,6 +176,7 @@ export class ProductDetailsService {
       }
 
       const serviceCategory = await this.getServiceCategoryByUid(uidAccProductGroup);
+      // The parent UID is optional because top-level categories do not have a parent node.
       const parentUid = serviceCategory?.UID_AccProductGroupParent?.value;
 
       if (!parentUid) {
@@ -193,7 +194,7 @@ export class ProductDetailsService {
     }
   }
 
-  // Gets the service category for the given product item.
+  // Fetch a single service category entity for the requested UID.
   private async getServiceCategoryByUid(
     uidAccProductGroup: string,
   ): Promise<PortalServicecategories> {

@@ -71,8 +71,10 @@ export class ProductDetailsSidesheetComponent implements OnInit {
     public data: {
       item: PortalServiceitems;
 
-      serviceCategory?: PortalServicecategories; // data for service category
-      parentServiceCategory?: PortalServicecategories; // data for parent service category
+      // Child category directly linked to the selected product.
+      serviceCategory?: PortalServicecategories;
+      // Parent category shown as additional context above the direct category.
+      parentServiceCategory?: PortalServicecategories;
 
       orderStatus: {
         statusIcon: string;
@@ -84,6 +86,7 @@ export class ProductDetailsSidesheetComponent implements OnInit {
   ) {}
 
   public ngOnInit(): void {
+    // Only these product tables expose entitlement data for the second tab.
     this.hasEntitlements = ["ESet", "QERAssign"].includes(
       this.getValue("TableName"),
     );

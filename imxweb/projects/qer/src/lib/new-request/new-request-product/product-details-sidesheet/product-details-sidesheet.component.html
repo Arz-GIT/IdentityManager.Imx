@@ -26,7 +26,7 @@
                   "></ng-template>
               </div>
             </div>
-            <!-- customized details to see service category parent information -->
+            <!-- Show the parent category first so the hierarchy reads top-down. -->
             <div class="details-item" *ngIf="data.parentServiceCategory">
               <div class="details-label">
                 {{
@@ -58,7 +58,7 @@
               </div>
             </div>
 
-            <!-- customized details to see service category child information -->
+            <!-- Show the category directly assigned to the product below its parent. -->
             <div class="details-item" *ngIf="data.serviceCategory">
               <div class="details-label">
                 {{
