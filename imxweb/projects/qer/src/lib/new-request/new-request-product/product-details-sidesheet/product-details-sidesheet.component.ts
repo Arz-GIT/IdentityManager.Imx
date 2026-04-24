@@ -24,15 +24,15 @@
  *
  */
 
-import { Component, Inject, OnInit } from '@angular/core';
-import { MatTabChangeEvent } from '@angular/material/tabs';
-import { EUI_SIDESHEET_DATA } from '@elemental-ui/core';
-import { PortalServiceitems, QerProjectConfig } from 'imx-api-qer';
+import { Component, Inject, OnInit } from "@angular/core";
+import { MatTabChangeEvent } from "@angular/material/tabs";
+import { EUI_SIDESHEET_DATA } from "@elemental-ui/core";
+import { PortalServiceitems, QerProjectConfig } from "imx-api-qer";
 
 @Component({
-  selector: 'imx-product-details-sidesheet',
-  templateUrl: './product-details-sidesheet.component.html',
-  styleUrls: ['./product-details-sidesheet.component.scss'],
+  selector: "imx-product-details-sidesheet",
+  templateUrl: "./product-details-sidesheet.component.html",
+  styleUrls: ["./product-details-sidesheet.component.scss"],
 })
 export class ProductDetailsSidesheetComponent implements OnInit {
   public hasEntitlements: boolean;
@@ -44,17 +44,21 @@ export class ProductDetailsSidesheetComponent implements OnInit {
   protected accProductProperties: string[] = [];
 
   /** A list of properties, that cannot be customized in the Admin Portal */
-  protected fixedProductProperties = ['ServiceCategoryFullPath', 'TableName', 'Tags'];
+  protected fixedProductProperties = [
+    "ServiceCategoryFullPath",
+    "TableName",
+    "Tags",
+  ];
 
   protected ldsEntitlementInfo =
-  '#LDS#Here you can get an overview of the entitlements associated with the product. If you request the product, the recipient will get the listed entitlements.';
+    "#LDS#Here you can get an overview of the entitlements associated with the product. If you request the product, the recipient will get the listed entitlements.";
 
   /** A mapping between properties/columns and a css class to visualize the property value */
   private cssPropertyMapping = new Map<string, string>([
-    ['ServiceCategoryFullPath', 'link'],
-    ['TableName', 'bold'],
-    ['Tags', 'bold'],
-    ['ArticleCode', 'bold'],
+    ["ServiceCategoryFullPath", "link"],
+    ["TableName", "bold"],
+    ["Tags", "bold"],
+    ["ArticleCode", "bold"],
   ]);
 
   constructor(
@@ -67,12 +71,16 @@ export class ProductDetailsSidesheetComponent implements OnInit {
       } | null;
       imageUrl: string;
       projectConfig: QerProjectConfig;
-    }
+      sysAdminComment?: string;
+    },
   ) {}
 
   public ngOnInit(): void {
-    this.hasEntitlements = ['ESet', 'QERAssign'].includes(this.getValue('TableName'));
-    this.accProductProperties = this.data?.projectConfig?.ITShopConfig?.AccProductProperties ?? [];
+    this.hasEntitlements = ["ESet", "QERAssign"].includes(
+      this.getValue("TableName"),
+    );
+    this.accProductProperties =
+      this.data?.projectConfig?.ITShopConfig?.AccProductProperties ?? [];
   }
 
   public onTabChange(change: MatTabChangeEvent) {
@@ -81,7 +89,10 @@ export class ProductDetailsSidesheetComponent implements OnInit {
 
   /** Returns the display value for the given property/column. */
   public getDisplay(column: string): string {
-    const value: string = this.data.item.GetEntity().GetColumn(column).GetDisplayValue();
+    const value: string = this.data.item
+      .GetEntity()
+      .GetColumn(column)
+      .GetDisplayValue();
     return value;
   }
 
@@ -92,7 +103,7 @@ export class ProductDetailsSidesheetComponent implements OnInit {
 
   /** Returns a special css class for the given property/column.  */
   protected getCssClass(column: string): string {
-    return this.cssPropertyMapping.get(column) ?? '';
+    return this.cssPropertyMapping.get(column) ?? "";
   }
 
   private getValue(column: string): string {

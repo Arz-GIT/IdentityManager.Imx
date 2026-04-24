@@ -1,5 +1,10 @@
 <div eui-sidesheet-content>
-  <eui-alert *ngIf="data.orderStatus" class="imx-helper-alert" type="info" condensed="true" colored="true"
+  <eui-alert
+    *ngIf="data.orderStatus"
+    class="imx-helper-alert"
+    type="info"
+    condensed="true"
+    colored="true"
     [dismissable]="true">
     {{ data.orderStatus.statusDisplay }}
   </eui-alert>
@@ -9,42 +14,62 @@
         <div class="details-container">
           <div class="details-text">
             <!-- the following properties cannot be customized in the Adminportal because they are calculated properties -->
-            <div class="details-item" *ngFor="let fixedProperty of fixedProductProperties">
-              <div class="details-label">
-                {{ getCaption(fixedProperty) }}:
-              </div>
+            <div
+              class="details-item"
+              *ngFor="let fixedProperty of fixedProductProperties">
+              <div class="details-label">{{ getCaption(fixedProperty) }}:</div>
               <div class="details-value  {{ getCssClass(fixedProperty) }}">
                 <ng-template
-                  *ngTemplateOutlet="formatValue; context: {$implicit: getDisplay(fixedProperty)}"></ng-template>
+                  *ngTemplateOutlet="
+                    formatValue;
+                    context: { $implicit: getDisplay(fixedProperty) }
+                  "></ng-template>
               </div>
             </div>
             <!-- the following properties can be customized in the Adminportal -> ServerConfig/ITShopConfig/AccProductProperties -->
             <div class="details-item" *ngFor="let property of accProductProperties">
-              <div class="details-label">
-                {{ getCaption(property) }}:
-              </div>
+              <div class="details-label">{{ getCaption(property) }}:</div>
               <div class="details-value {{ getCssClass(property) }}">
-                <ng-template *ngTemplateOutlet="formatValue; context: {$implicit: getDisplay(property)}"></ng-template>
+                <ng-template
+                  *ngTemplateOutlet="
+                    formatValue;
+                    context: { $implicit: getDisplay(property) }
+                  "></ng-template>
               </div>
             </div>
           </div>
           <div *ngIf="data.imageUrl" class="details-image">
-            <img [src]="data.imageUrl">
+            <img [src]="data.imageUrl" />
           </div>
         </div>
       </mat-tab>
-      <mat-tab *ngIf="hasEntitlements" label="{{ '#LDS#Heading Entitlements' | translate }}">
+      <mat-tab
+        *ngIf="hasEntitlements"
+        label="{{ '#LDS#Heading Entitlements' | translate }}">
         <div class="tab-container">
-          <imx-product-entitlements [uidAccProduct]="data.item.GetEntity().GetKeys()[0]"></imx-product-entitlements>
+          <imx-product-entitlements
+            [uidAccProduct]="
+              data.item.GetEntity().GetKeys()[0]
+            "></imx-product-entitlements>
         </div>
       </mat-tab>
     </mat-tab-group>
   </mat-card>
+
+  <mat-card *ngIf="data.sysAdminComment" class="sysadmin-comment-card">
+    <div class="details-item">
+      <div class="details-label">Hinweis für Sysadmin:</div>
+      <div class="details-value">
+        {{ data.sysAdminComment }}
+      </div>
+    </div>
+  </mat-card>
+
   <span class="entitlement-info" *ngIf="onEntitlements">
     {{ ldsEntitlementInfo | translate }}
   </span>
 </div>
 
 <ng-template #formatValue let-value>
-  {{value.length > 0 ? value : ('#LDS#Not set' | translate)}}
+  {{ value.length > 0 ? value : ("#LDS#Not set" | translate) }}
 </ng-template>
