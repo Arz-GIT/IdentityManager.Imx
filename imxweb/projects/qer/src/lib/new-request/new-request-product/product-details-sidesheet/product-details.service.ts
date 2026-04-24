@@ -28,9 +28,10 @@ import { Injectable } from '@angular/core';
 import { SafeUrl } from '@angular/platform-browser';
 import { EuiSidesheetService } from '@elemental-ui/core';
 import { TranslateService } from '@ngx-translate/core';
+import { TypedClient as RmsTypedClient, V2Client as RmsV2Client } from '@imx-modules/imx-api-rms';
 
-import { IWriteValue, MultiValue, TypedEntity } from '@imx-modules/imx-qbm-dbts';
-import { LdsReplacePipe, calculateSidesheetWidth } from 'qbm';
+import { CompareOperator, FilterType, IWriteValue, MultiValue, TypedEntity } from '@imx-modules/imx-qbm-dbts';
+import { AppConfigService, ClassloggerService, ImxTranslationProviderService, LdsReplacePipe, calculateSidesheetWidth } from 'qbm';
 import { ImageService } from '../../../itshop/image.service';
 import { ProjectConfigurationService } from '../../../project-configuration/project-configuration.service';
 import { ProductDetailsSidesheetComponent } from './product-details-sidesheet.component';
@@ -39,18 +40,31 @@ import { ProductDetailsSidesheetComponent } from './product-details-sidesheet.co
   providedIn: 'root',
 })
 export class ProductDetailsService {
+  private rmsTypedClient?: RmsTypedClient;
+
   constructor(
     private readonly image: ImageService,
     private readonly ldsReplace: LdsReplacePipe,
     private readonly sidesheetService: EuiSidesheetService,
     private readonly translateService: TranslateService,
     private readonly projectConfigService: ProjectConfigurationService,
-  ) {}
+    private readonly appConfig: AppConfigService,
+    private readonly logger: ClassloggerService,
+    private readonly translationProvider: ImxTranslationProviderService,
+  ) {
+    try {
+      const rmsClient = new RmsV2Client(this.appConfig.apiClient, this.appConfig.client);
+      this.rmsTypedClient = new RmsTypedClient(rmsClient, this.translationProvider);
+    } catch (error) {
+      this.logger.error(this, error);
+    }
+  }
 
   public async showProductDetails(item: TypedEntity, recipients: IWriteValue<string>): Promise<void> {
     const projectConfig = await this.projectConfigService.getConfig();
 
     const orderStatus = await this.getOrderStatus(item, recipients);
+    const sysAdminComment = await this.getSysAdminComment(item);
     await this.sidesheetService
       .open(ProductDetailsSidesheetComponent, {
         title: await this.translateService.instant('#LDS#Heading View Product Details'),
@@ -64,6 +78,7 @@ export class ProductDetailsService {
           orderStatus: orderStatus,
           imageUrl: this.getProductImage(item),
           projectConfig,
+          sysAdminComment,
         },
       })
       .afterClosed()
@@ -115,6 +130,57 @@ export class ProductDetailsService {
           statusIcon: 'error',
           statusDisplay: await this.translateService.instant('#LDS#This product is already in your shopping cart.'),
         };
+    }
+  }
+
+  private async getSysAdminComment(item: TypedEntity): Promise<string | undefined> {
+    try {
+      const uidAccProduct = this.getUidAccProduct(item);
+      if (!uidAccProduct || !this.rmsTypedClient) {
+        return undefined;
+      }
+
+      const result = await this.rmsTypedClient.PortalAdminRoleEset.Get({
+        StartIndex: 0,
+        PageSize: 1,
+        filter: [{
+          ColumnName: 'UID_AccProduct',
+          Type: FilterType.Compare,
+          CompareOp: CompareOperator.Equal,
+          Value1: uidAccProduct,
+        }],
+        withProperties: 'Commentary',
+      });
+      const entity = result?.Data?.[0]?.GetEntity();
+      const manualFlag = this.tryGetColumnValue(entity, 'CustomProperty01');
+      const commentary = this.tryGetColumnDisplayValue(entity, 'Commentary');
+      return manualFlag?.trim().toLocaleLowerCase() === 'manuell' && commentary?.trim() ? commentary : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private getUidAccProduct(item: TypedEntity): string | undefined {
+    try {
+      return item.GetEntity().GetColumn('UID_AccProduct')?.GetValue() || item.GetEntity().GetKeys()?.[0];
+    } catch {
+      return item.GetEntity().GetKeys()?.[0];
+    }
+  }
+
+  private tryGetColumnDisplayValue(entity: any, columnName: string): string | undefined {
+    try {
+      return entity?.GetColumn?.(columnName)?.GetDisplayValue?.();
+    } catch {
+      return undefined;
+    }
+  }
+
+  private tryGetColumnValue(entity: any, columnName: string): string | undefined {
+    try {
+      return entity?.GetColumn?.(columnName)?.GetValue?.();
+    } catch {
+      return undefined;
     }
   }
 }

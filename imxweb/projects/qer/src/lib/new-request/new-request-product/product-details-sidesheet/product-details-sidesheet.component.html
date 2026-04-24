@@ -45,6 +45,14 @@
       }
     </mat-tab-group>
   </mat-card>
+  @if (data.sysAdminComment) {
+    <mat-card class="sysadmin-comment-card">
+      <div class="details-item">
+        <div class="details-label">Hinweis für Sysadmin:</div>
+        <div class="details-value">{{ data.sysAdminComment }}</div>
+      </div>
+    </mat-card>
+  }
 </div>
 
 <div eui-sidesheet-actions>

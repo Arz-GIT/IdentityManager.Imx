@@ -71,6 +71,7 @@ export class ProductDetailsSidesheetComponent implements OnInit {
       } | null;
       imageUrl: string;
       projectConfig: QerProjectConfig;
+      sysAdminComment?: string;
     },
     private snackbar: SnackBarService,
     private translate: TranslateService,
