@@ -28,25 +28,30 @@ import { Injectable } from "@angular/core";
 import { SafeUrl } from "@angular/platform-browser";
 import { EuiSidesheetService } from "@elemental-ui/core";
 import { TranslateService } from "@ngx-translate/core";
-
 import {
   PortalServicecategories,
   PortalShopServiceitems,
   QerProjectConfig,
 } from "imx-api-qer";
+import { TypedClient as RmsTypedClient, V2Client as RmsV2Client } from "imx-api-rms";
 import { CompareOperator, FilterType, IWriteValue, MultiValue } from "imx-qbm-dbts";
-import { LdsReplacePipe } from "qbm";
+import {
+  AppConfigService,
+  ClassloggerService,
+  ImxTranslationProviderService,
+  LdsReplacePipe,
+} from "qbm";
 import { ImageService } from "../../../itshop/image.service";
 import { ProjectConfigurationService } from "../../../project-configuration/project-configuration.service";
-import { ProductDetailsSidesheetComponent } from "./product-details-sidesheet.component";
-
 import { ServiceCategoriesService } from "../../../service-categories/service-categories.service";
+import { ProductDetailsSidesheetComponent } from "./product-details-sidesheet.component";
 
 @Injectable({
   providedIn: "root",
 })
 export class ProductDetailsService {
   private projectConfig: QerProjectConfig;
+  private rmsTypedClient?: RmsTypedClient;
 
   constructor(
     private readonly image: ImageService,
@@ -54,9 +59,20 @@ export class ProductDetailsService {
     private readonly sidesheetService: EuiSidesheetService,
     private readonly translateService: TranslateService,
     private readonly projectConfigService: ProjectConfigurationService,
-
     private readonly serviceCategoriesService: ServiceCategoriesService,
-  ) {}
+    private readonly appConfig: AppConfigService,
+    private readonly logger: ClassloggerService,
+    private readonly translationProvider: ImxTranslationProviderService,
+  ) {
+    try {
+      // Build a lightweight RMS client locally so qer can resolve ESet data
+      // without introducing a project-level dependency on the rms Angular library.
+      const rmsClient = new RmsV2Client(this.appConfig.apiClient, this.appConfig.client);
+      this.rmsTypedClient = new RmsTypedClient(rmsClient, this.translationProvider);
+    } catch (error) {
+      this.logger.error(this, error);
+    }
+  }
 
   public async showProductDetails(
     item: PortalShopServiceitems,
@@ -67,9 +83,9 @@ export class ProductDetailsService {
     }
 
     const orderStatus = await this.getOrderStatus(item, recipients);
-
     // Get service category details (service category and parent service category) for the given product item.
     const serviceCategoryDetails = await this.getServiceCategoryDetails(item);
+    const sysAdminComment = await this.getSysAdminDescription(item);
 
     await this.sidesheetService
       .open(ProductDetailsSidesheetComponent, {
@@ -88,6 +104,7 @@ export class ProductDetailsService {
           orderStatus: orderStatus,
           imageUrl: this.getProductImage(item),
           projectConfig: this.projectConfig,
+          sysAdminComment,
         },
       })
       .afterClosed()
@@ -193,7 +210,7 @@ export class ProductDetailsService {
     }
   }
 
-  // Gets the service category for the given product item.
+  // Gets a single service category entity by UID.
   private async getServiceCategoryByUid(
     uidAccProductGroup: string,
   ): Promise<PortalServicecategories> {
@@ -212,6 +229,100 @@ export class ProductDetailsService {
 
       return categories?.Data?.[0];
     } catch (error) {
+      return undefined;
+    }
+  }
+
+  // Resolve the text shown below the product details for ESet products.
+  // The text is stored in the linked system role's Commentary field.
+  private async getSysAdminDescription(
+    item: PortalShopServiceitems,
+  ): Promise<string | undefined> {
+    try {
+      // Step 1: resolve the service item id used to find the linked ESet role.
+      const uidAccProduct = this.getUidAccProduct(item);
+      if (!uidAccProduct || !this.rmsTypedClient) {
+        return undefined;
+      }
+
+      // Step 2: find the ESet role that belongs to the selected service item.
+      const result = await this.rmsTypedClient.PortalAdminRoleEset.Get({
+        StartIndex: 0,
+        PageSize: 1,
+        filter: [
+          {
+            ColumnName: "UID_AccProduct",
+            Type: FilterType.Compare,
+            CompareOp: CompareOperator.Equal,
+            Value1: uidAccProduct,
+          },
+        ],
+      });
+
+      const role = result?.Data?.[0];
+      if (!role) {
+        return undefined;
+      }
+
+      // Step 3: read the ESet primary key from the list result.
+      const uidESet = role.GetEntity().GetKeys()?.[0];
+      if (!uidESet) {
+        return undefined;
+      }
+
+      // Step 4: load the interactive ESet entity because it exposes Commentary.
+      const interactiveRole =
+        (await this.rmsTypedClient.PortalAdminRoleEsetInteractive.Get_byid(uidESet))
+          ?.Data?.[0];
+
+      if (!interactiveRole) {
+        return undefined;
+      }
+
+      // Step 5: return Commentary only when the column exists and contains text.
+      const interactiveEntity = interactiveRole.GetEntity();
+      if (!interactiveEntity?.GetSchema()?.Columns?.Commentary) {
+        return undefined;
+      }
+
+      const commentary = this.tryGetColumnDisplayValue(
+        interactiveEntity,
+        "Commentary",
+      ) ?? "";
+
+      if (commentary.trim().length === 0) {
+        return undefined;
+      }
+
+      return commentary;
+    } catch {
+      return undefined;
+    }
+  }
+
+  // Prefer the explicit UID_AccProduct column and fall back to the primary key.
+  private getUidAccProduct(item: PortalShopServiceitems): string | undefined {
+    try {
+      const uidAccProduct = item.GetEntity().GetColumn("UID_AccProduct")?.GetValue();
+      if (uidAccProduct) {
+        return uidAccProduct;
+      }
+    } catch {
+    }
+
+    return item.GetEntity().GetKeys()?.[0];
+  }
+
+  // Read a display value defensively because interactive columns can differ by entity.
+  private tryGetColumnDisplayValue(
+    entity: {
+      GetColumn?(name: string): { GetDisplayValue?(): string };
+    } | undefined,
+    columnName: string,
+  ): string | undefined {
+    try {
+      return entity?.GetColumn?.(columnName)?.GetDisplayValue?.();
+    } catch {
       return undefined;
     }
   }

@@ -27,7 +27,6 @@
 import { Component, Inject, OnInit } from "@angular/core";
 import { MatTabChangeEvent } from "@angular/material/tabs";
 import { EUI_SIDESHEET_DATA } from "@elemental-ui/core";
-
 import {
   PortalServicecategories,
   PortalServiceitems,
@@ -70,16 +69,15 @@ export class ProductDetailsSidesheetComponent implements OnInit {
     @Inject(EUI_SIDESHEET_DATA)
     public data: {
       item: PortalServiceitems;
-
-      serviceCategory?: PortalServicecategories; // data for service category
-      parentServiceCategory?: PortalServicecategories; // data for parent service category
-
+      serviceCategory?: PortalServicecategories;
+      parentServiceCategory?: PortalServicecategories;
       orderStatus: {
         statusIcon: string;
         statusDisplay: string;
       } | null;
       imageUrl: string;
       projectConfig: QerProjectConfig;
+      sysAdminComment?: string;
     },
   ) {}
 

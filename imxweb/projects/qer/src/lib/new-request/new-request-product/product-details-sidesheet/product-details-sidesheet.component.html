@@ -117,6 +117,16 @@
       </mat-tab>
     </mat-tab-group>
   </mat-card>
+
+  <mat-card *ngIf="data.sysAdminComment" class="sysadmin-comment-card">
+    <div class="details-item">
+      <div class="details-label">Hinweis für Sysadmin:</div>
+      <div class="details-value">
+        {{ data.sysAdminComment }}
+      </div>
+    </div>
+  </mat-card>
+
   <span class="entitlement-info" *ngIf="onEntitlements">
     {{ ldsEntitlementInfo | translate }}
   </span>
