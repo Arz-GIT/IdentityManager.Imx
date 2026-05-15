@@ -85,7 +85,7 @@ export class ProductDetailsService {
     const orderStatus = await this.getOrderStatus(item, recipients);
     // Get service category details (service category and parent service category) for the given product item.
     const serviceCategoryDetails = await this.getServiceCategoryDetails(item);
-    const sysAdminComment = await this.getSysAdminDescription(item);
+    const sysAdminData = await this.getSysAdminDetails(item);
 
     await this.sidesheetService
       .open(ProductDetailsSidesheetComponent, {
@@ -104,7 +104,7 @@ export class ProductDetailsService {
           orderStatus: orderStatus,
           imageUrl: this.getProductImage(item),
           projectConfig: this.projectConfig,
-          sysAdminComment,
+          sysAdminComment: sysAdminData.commentary,
         },
       })
       .afterClosed()
@@ -233,19 +233,23 @@ export class ProductDetailsService {
     }
   }
 
-  // Resolve the text shown below the product details for ESet products.
-  // The text is stored in the linked system role's Commentary field.
-  private async getSysAdminDescription(
+  private async getSysAdminDetails(
     item: PortalShopServiceitems,
-  ): Promise<string | undefined> {
+  ): Promise<{ commentary?: string }> {
     try {
-      // Step 1: resolve the service item id used to find the linked ESet role.
       const uidAccProduct = this.getUidAccProduct(item);
-      if (!uidAccProduct || !this.rmsTypedClient) {
-        return undefined;
+      if (!uidAccProduct) {
+        return {};
       }
 
-      // Step 2: find the ESet role that belongs to the selected service item.
+      if (!this.rmsTypedClient) {
+        return {};
+      }
+
+      // Products are linked to system roles through UID_AccProduct.
+      // The matching ESet carries the sysadmin commentary and the manual flag.
+      // The live API returns CustomProperty01 together with the commentary data.
+      // Requesting CustomProperty01 explicitly via withProperties is rejected.
       const result = await this.rmsTypedClient.PortalAdminRoleEset.Get({
         StartIndex: 0,
         PageSize: 1,
@@ -257,46 +261,28 @@ export class ProductDetailsService {
             Value1: uidAccProduct,
           },
         ],
+        withProperties: "Commentary",
       });
 
       const role = result?.Data?.[0];
       if (!role) {
-        return undefined;
+        return {};
       }
 
-      // Step 3: read the ESet primary key from the list result.
-      const uidESet = role.GetEntity().GetKeys()?.[0];
-      if (!uidESet) {
-        return undefined;
-      }
+      const entity = role.GetEntity();
+      const commentary = this.tryGetColumnDisplayValue(entity, "Commentary");
+      const customProperty01 = this.tryGetColumnValue(entity, "CustomProperty01");
+      // Only products marked as "manuell" should show the sysadmin commentary.
+      const showSysAdminComment = this.isManualFlag(customProperty01);
 
-      // Step 4: load the interactive ESet entity because it exposes Commentary.
-      const interactiveRole =
-        (await this.rmsTypedClient.PortalAdminRoleEsetInteractive.Get_byid(uidESet))
-          ?.Data?.[0];
-
-      if (!interactiveRole) {
-        return undefined;
-      }
-
-      // Step 5: return Commentary only when the column exists and contains text.
-      const interactiveEntity = interactiveRole.GetEntity();
-      if (!interactiveEntity?.GetSchema()?.Columns?.Commentary) {
-        return undefined;
-      }
-
-      const commentary = this.tryGetColumnDisplayValue(
-        interactiveEntity,
-        "Commentary",
-      ) ?? "";
-
-      if (commentary.trim().length === 0) {
-        return undefined;
-      }
-
-      return commentary;
+      return {
+        commentary:
+          showSysAdminComment && commentary?.trim().length
+            ? commentary
+            : undefined,
+      };
     } catch {
-      return undefined;
+      return {};
     }
   }
 
@@ -313,7 +299,11 @@ export class ProductDetailsService {
     return item.GetEntity().GetKeys()?.[0];
   }
 
-  // Read a display value defensively because interactive columns can differ by entity.
+  private isManualFlag(value: string | undefined): boolean {
+    return value?.trim().toLocaleLowerCase() === "manuell";
+  }
+
+  // Read a display value defensively because not every ESet response contains every column.
   private tryGetColumnDisplayValue(
     entity: {
       GetColumn?(name: string): { GetDisplayValue?(): string };
@@ -322,6 +312,20 @@ export class ProductDetailsService {
   ): string | undefined {
     try {
       return entity?.GetColumn?.(columnName)?.GetDisplayValue?.();
+    } catch {
+      return undefined;
+    }
+  }
+
+  // Read the raw value for the CustomProperty01 flag.
+  private tryGetColumnValue(
+    entity: {
+      GetColumn?(name: string): { GetValue?(): string };
+    } | undefined,
+    columnName: string,
+  ): string | undefined {
+    try {
+      return entity?.GetColumn?.(columnName)?.GetValue?.();
     } catch {
       return undefined;
     }
