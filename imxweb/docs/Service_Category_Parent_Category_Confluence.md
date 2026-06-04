@@ -39,6 +39,7 @@ The logic is implemented in:
 - `projects/qer/src/lib/new-request/new-request-product/product-details-sidesheet/product-details.service.ts`
 - `projects/qer/src/lib/new-request/new-request-product/product-details-sidesheet/product-details-sidesheet.component.ts`
 - `projects/qer/src/lib/new-request/new-request-product/product-details-sidesheet/product-details-sidesheet.component.html`
+- `projects/qer/src/lib/new-request/new-request-product/product-details-sidesheet/product-details-sidesheet.component.scss`
 
 ### High-Level Flow
 
@@ -315,9 +316,55 @@ Rendered fields:
 - `Description`
 - `Remarks`
 
+The displayed values still come from the backend entity columns. Only the visible labels are overridden in the frontend because the same backend columns need different labels depending on whether they belong to the parent service category or the direct service category.
+
 If a field is empty, the UI displays `Not set`.
 
 If a category object is not available, the related block is not rendered.
+
+### Custom Frontend Labels
+
+The additional category fields do not use the generic backend column captions for `Description` and `Remarks`. This is intentional because the same column names are shown with different business meanings in the sidesheet.
+
+Label mapping:
+
+- Parent `Description`: `Application description` / `Applikationbeschreibung`
+- Parent `Remarks`: `Help text` / `Hilfetext`
+- Direct service category `Description`: `Application filter description` / `Filter Anwendungsbeschr.`
+- Direct service category `Remarks`: `Filter Help text` / `Filter Hilfetext`
+
+The frontend detects the active language through `TranslateService.currentLang`. German is selected when the current language starts with `de`; English is used as the default fallback.
+
+```ts
+protected getServiceCategoryLabel(label: ServiceCategoryLabel): string {
+  const isGerman = this.translateService.currentLang
+    ?.toLowerCase()
+    .startsWith("de");
+
+  const labels: Record<ServiceCategoryLabel, { de: string; en: string }> = {
+    applicationDescription: {
+      de: "Applikationbeschreibung",
+      en: "Application description",
+    },
+    helpText: {
+      de: "Hilfetext",
+      en: "Help text",
+    },
+    applicationFilterDescription: {
+      de: "Filter Anwendungsbeschr.",
+      en: "Application filter description",
+    },
+    filterHelpText: {
+      de: "Filter Hilfetext",
+      en: "Filter Help text",
+    },
+  };
+
+  return labels[label][isGerman ? "de" : "en"];
+}
+```
+
+This keeps the backend metadata unchanged and avoids changing the caption of `Description` or `Remarks` globally.
 
 ### HTML Implementation
 
@@ -328,7 +375,7 @@ The following HTML snippet shows the relevant template section that renders the 
 <div class="details-item" *ngIf="data.parentServiceCategory">
   <div class="details-label">
     {{
-      data.parentServiceCategory.Description.Column.GetMetadata().GetDisplay()
+      getServiceCategoryLabel("applicationDescription")
     }}:
   </div>
   <div class="details-value">
@@ -342,7 +389,7 @@ The following HTML snippet shows the relevant template section that renders the 
 <div class="details-item" *ngIf="data.parentServiceCategory">
   <div class="details-label">
     {{
-      data.parentServiceCategory.Remarks.Column.GetMetadata().GetDisplay()
+      getServiceCategoryLabel("helpText")
     }}:
   </div>
   <div class="details-value">
@@ -358,7 +405,7 @@ The following HTML snippet shows the relevant template section that renders the 
 <div class="details-item" *ngIf="data.serviceCategory">
   <div class="details-label">
     {{
-      data.serviceCategory.Description.Column.GetMetadata().GetDisplay()
+      getServiceCategoryLabel("applicationFilterDescription")
     }}:
   </div>
   <div class="details-value">
@@ -372,7 +419,7 @@ The following HTML snippet shows the relevant template section that renders the 
 
 <div class="details-item" *ngIf="data.serviceCategory">
   <div class="details-label">
-    {{ data.serviceCategory.Remarks.Column.GetMetadata().GetDisplay() }}:
+    {{ getServiceCategoryLabel("filterHelpText") }}:
   </div>
   <div class="details-value">
     {{
@@ -389,16 +436,31 @@ The following HTML snippet shows the relevant template section that renders the 
 - `*ngIf="data.parentServiceCategory"` ensures that parent category fields are rendered only when parent data is available.
 - The parent category is displayed before the direct category so the hierarchy is understandable from top to bottom.
 - `Description` and `Remarks` are rendered separately to expose the most useful category metadata in a readable format.
-- `GetMetadata().GetDisplay()` is used for the label so the UI uses the configured display caption instead of a hard-coded text.
+- `getServiceCategoryLabel(...)` is used for the labels so the same backend columns can be displayed with context-specific names.
 - `GetDisplayValue()` is used for the field value so the template shows the user-facing representation of the column.
 - The ternary fallback to `"#LDS#Not set"` ensures that empty values do not appear as blank lines in the sidesheet.
 - `*ngIf="data.serviceCategory"` ensures that the direct category block is only shown when the product category was resolved successfully.
+
+### Label Layout
+
+The German labels are longer than the English labels. To prevent label text from overlapping the value column, the label column was widened from `120px` to `180px`.
+
+```scss
+.details-label {
+  text-align: right;
+  padding-right: 15px;
+  max-width: 180px;
+}
+```
+
+The value column was not changed. It continues to use the existing flex behavior and renders the backend display values as before.
 
 ## Important Design Decisions
 
 - The implementation is intentionally non-invasive and extends the existing details tab.
 - Parent category data is optional and only shown when a parent exists.
 - The direct service category remains the main category shown for the selected product.
+- Category labels are overridden locally in the frontend because the same backend columns require different display names in this specific sidesheet.
 - Failures during category lookup must not block the sidesheet from opening.
 - Empty or missing category data results in omitted UI blocks instead of runtime errors.
 
@@ -418,6 +480,7 @@ This ensures that the feature improves the UI when data is available, but never 
 - `projects/qer/src/lib/new-request/new-request-product/product-details-sidesheet/product-details.service.ts`
 - `projects/qer/src/lib/new-request/new-request-product/product-details-sidesheet/product-details-sidesheet.component.ts`
 - `projects/qer/src/lib/new-request/new-request-product/product-details-sidesheet/product-details-sidesheet.component.html`
+- `projects/qer/src/lib/new-request/new-request-product/product-details-sidesheet/product-details-sidesheet.component.scss`
 
 ## Expected Behavior After Change
 
@@ -432,6 +495,8 @@ This ensures that the feature improves the UI when data is available, but never 
 - Open a product linked to a top-level service category and verify that only one category section is shown.
 - Open a product without a linked service category and verify that the sidesheet behaves as before.
 - Verify that empty `Description` or `Remarks` values render as `Not set`.
+- Verify the custom labels in English and German.
+- Verify that long German labels do not overlap the displayed values.
 
 ## Business Value
 

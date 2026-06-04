@@ -27,12 +27,19 @@
 import { Component, Inject, OnInit } from "@angular/core";
 import { MatTabChangeEvent } from "@angular/material/tabs";
 import { EUI_SIDESHEET_DATA } from "@elemental-ui/core";
+import { TranslateService } from "@ngx-translate/core";
 
 import {
   PortalServicecategories,
   PortalServiceitems,
   QerProjectConfig,
 } from "imx-api-qer";
+
+type ServiceCategoryLabel =
+  | "applicationDescription"
+  | "helpText"
+  | "applicationFilterDescription"
+  | "filterHelpText";
 
 @Component({
   selector: "imx-product-details-sidesheet",
@@ -83,6 +90,7 @@ export class ProductDetailsSidesheetComponent implements OnInit {
       imageUrl: string;
       projectConfig: QerProjectConfig;
     },
+    private readonly translateService: TranslateService,
   ) {}
 
   public ngOnInit(): void {
@@ -110,6 +118,33 @@ export class ProductDetailsSidesheetComponent implements OnInit {
   /** Returns the caption for the given property/column. */
   protected getCaption(column: string): string {
     return this.data.item.GetEntity().GetColumn(column).GetMetadata().GetDisplay();
+  }
+
+  protected getServiceCategoryLabel(label: ServiceCategoryLabel): string {
+    const isGerman = this.translateService.currentLang
+      ?.toLowerCase()
+      .startsWith("de");
+
+    const labels: Record<ServiceCategoryLabel, { de: string; en: string }> = {
+      applicationDescription: {
+        de: "Applikationbeschreibung",
+        en: "Application description",
+      },
+      helpText: {
+        de: "Hilfetext",
+        en: "Help text",
+      },
+      applicationFilterDescription: {
+        de: "Filter Anwendungsbeschr.",
+        en: "Application filter description",
+      },
+      filterHelpText: {
+        de: "Filter Hilfetext",
+        en: "Filter Help text",
+      },
+    };
+
+    return labels[label][isGerman ? "de" : "en"];
   }
 
   /** Returns a special css class for the given property/column.  */
