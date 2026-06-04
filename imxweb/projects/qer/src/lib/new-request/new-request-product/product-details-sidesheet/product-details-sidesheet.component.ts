@@ -33,6 +33,8 @@ import { TranslateService } from '@ngx-translate/core';
 import { HELP_CONTEXTUAL, LdsReplacePipe, SnackBarService } from 'qbm';
 import { NEW_REQUEST_ROUTE } from '../../constants';
 
+type ServiceCategoryLabel = 'applicationDescription' | 'helpText' | 'applicationFilterDescription' | 'filterHelpText';
+
 @Component({
     selector: 'imx-product-details-sidesheet',
     templateUrl: './product-details-sidesheet.component.html',
@@ -95,6 +97,17 @@ export class ProductDetailsSidesheetComponent implements OnInit {
   /** Returns the caption for the given property/column. */
   protected getCaption(column: string): string {
     return this.data.item.GetEntity().GetColumn(column).GetMetadata().GetDisplay();
+  }
+
+  protected getServiceCategoryLabel(label: ServiceCategoryLabel): string {
+    const isGerman = this.translate.currentLang?.toLowerCase().startsWith('de');
+    const labels: Record<ServiceCategoryLabel, { de: string; en: string }> = {
+      applicationDescription: { de: 'Applikationbeschreibung', en: 'Application description' },
+      helpText: { de: 'Hilfetext', en: 'Help text' },
+      applicationFilterDescription: { de: 'Filter Anwendungsbeschr.', en: 'Application filter description' },
+      filterHelpText: { de: 'Filter Hilfetext', en: 'Filter Help text' },
+    };
+    return labels[label][isGerman ? 'de' : 'en'];
   }
 
   /** Returns a special css class for the given property/column.  */

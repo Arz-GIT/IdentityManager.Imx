@@ -20,13 +20,13 @@
             }
             @if (data.parentServiceCategory) {
               <div class="details-item">
-                <div class="details-label">{{ data.parentServiceCategory.Description.Column.GetMetadata().GetDisplay() }}:</div>
+                <div class="details-label">{{ getServiceCategoryLabel('applicationDescription') }}:</div>
                 <div class="details-value">
                   {{ data.parentServiceCategory.Description.Column.GetDisplayValue() || ('#LDS#Not set' | translate) }}
                 </div>
               </div>
               <div class="details-item">
-                <div class="details-label">{{ data.parentServiceCategory.Remarks.Column.GetMetadata().GetDisplay() }}:</div>
+                <div class="details-label">{{ getServiceCategoryLabel('helpText') }}:</div>
                 <div class="details-value">
                   {{ data.parentServiceCategory.Remarks.Column.GetDisplayValue() || ('#LDS#Not set' | translate) }}
                 </div>
@@ -34,13 +34,13 @@
             }
             @if (data.serviceCategory) {
               <div class="details-item">
-                <div class="details-label">{{ data.serviceCategory.Description.Column.GetMetadata().GetDisplay() }}:</div>
+                <div class="details-label">{{ getServiceCategoryLabel('applicationFilterDescription') }}:</div>
                 <div class="details-value">
                   {{ data.serviceCategory.Description.Column.GetDisplayValue() || ('#LDS#Not set' | translate) }}
                 </div>
               </div>
               <div class="details-item">
-                <div class="details-label">{{ data.serviceCategory.Remarks.Column.GetMetadata().GetDisplay() }}:</div>
+                <div class="details-label">{{ getServiceCategoryLabel('filterHelpText') }}:</div>
                 <div class="details-value">
                   {{ data.serviceCategory.Remarks.Column.GetDisplayValue() || ('#LDS#Not set' | translate) }}
                 </div>
