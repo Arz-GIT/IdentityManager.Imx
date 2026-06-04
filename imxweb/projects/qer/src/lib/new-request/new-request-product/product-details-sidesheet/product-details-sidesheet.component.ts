@@ -27,11 +27,19 @@
 import { Component, Inject, OnInit } from "@angular/core";
 import { MatTabChangeEvent } from "@angular/material/tabs";
 import { EUI_SIDESHEET_DATA } from "@elemental-ui/core";
+import { TranslateService } from "@ngx-translate/core";
+
 import {
   PortalServicecategories,
   PortalServiceitems,
   QerProjectConfig,
 } from "imx-api-qer";
+
+type ServiceCategoryLabel =
+  | "applicationDescription"
+  | "helpText"
+  | "applicationFilterDescription"
+  | "filterHelpText";
 
 @Component({
   selector: "imx-product-details-sidesheet",
@@ -69,8 +77,12 @@ export class ProductDetailsSidesheetComponent implements OnInit {
     @Inject(EUI_SIDESHEET_DATA)
     public data: {
       item: PortalServiceitems;
+
+      // Child category directly linked to the selected product.
       serviceCategory?: PortalServicecategories;
+      // Parent category shown as additional context above the direct category.
       parentServiceCategory?: PortalServicecategories;
+
       orderStatus: {
         statusIcon: string;
         statusDisplay: string;
@@ -79,9 +91,11 @@ export class ProductDetailsSidesheetComponent implements OnInit {
       projectConfig: QerProjectConfig;
       sysAdminComment?: string;
     },
+    private readonly translateService: TranslateService,
   ) {}
 
   public ngOnInit(): void {
+    // Only these product tables expose entitlement data for the second tab.
     this.hasEntitlements = ["ESet", "QERAssign"].includes(
       this.getValue("TableName"),
     );
@@ -105,6 +119,33 @@ export class ProductDetailsSidesheetComponent implements OnInit {
   /** Returns the caption for the given property/column. */
   protected getCaption(column: string): string {
     return this.data.item.GetEntity().GetColumn(column).GetMetadata().GetDisplay();
+  }
+
+  protected getServiceCategoryLabel(label: ServiceCategoryLabel): string {
+    const isGerman = this.translateService.currentLang
+      ?.toLowerCase()
+      .startsWith("de");
+
+    const labels: Record<ServiceCategoryLabel, { de: string; en: string }> = {
+      applicationDescription: {
+        de: "Applikationbeschreibung",
+        en: "Application description",
+      },
+      helpText: {
+        de: "Hilfetext",
+        en: "Help text",
+      },
+      applicationFilterDescription: {
+        de: "Filter Anwendungsbeschr.",
+        en: "Application filter description",
+      },
+      filterHelpText: {
+        de: "Filter Hilfetext",
+        en: "Filter Help text",
+      },
+    };
+
+    return labels[label][isGerman ? "de" : "en"];
   }
 
   /** Returns a special css class for the given property/column.  */

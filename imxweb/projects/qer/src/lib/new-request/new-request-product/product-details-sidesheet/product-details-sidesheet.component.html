@@ -26,11 +26,11 @@
                   "></ng-template>
               </div>
             </div>
-            <!-- customized details to see service category parent information -->
+            <!-- Show the parent category first so the hierarchy reads top-down. -->
             <div class="details-item" *ngIf="data.parentServiceCategory">
               <div class="details-label">
                 {{
-                  data.parentServiceCategory.Description.Column.GetMetadata().GetDisplay()
+                  getServiceCategoryLabel("applicationDescription")
                 }}:
               </div>
               <div class="details-value">
@@ -45,7 +45,7 @@
             <div class="details-item" *ngIf="data.parentServiceCategory">
               <div class="details-label">
                 {{
-                  data.parentServiceCategory.Remarks.Column.GetMetadata().GetDisplay()
+                  getServiceCategoryLabel("helpText")
                 }}:
               </div>
               <div class="details-value">
@@ -58,11 +58,11 @@
               </div>
             </div>
 
-            <!-- customized details to see service category child information -->
+            <!-- Show the category directly assigned to the product below its parent. -->
             <div class="details-item" *ngIf="data.serviceCategory">
               <div class="details-label">
                 {{
-                  data.serviceCategory.Description.Column.GetMetadata().GetDisplay()
+                  getServiceCategoryLabel("applicationFilterDescription")
                 }}:
               </div>
               <div class="details-value">
@@ -77,7 +77,7 @@
 
             <div class="details-item" *ngIf="data.serviceCategory">
               <div class="details-label">
-                {{ data.serviceCategory.Remarks.Column.GetMetadata().GetDisplay() }}:
+                {{ getServiceCategoryLabel("filterHelpText") }}:
               </div>
               <div class="details-value">
                 {{

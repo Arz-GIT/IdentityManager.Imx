@@ -1,0 +1,312 @@
+h1. Service Category and Parent Category in Product Details Sidesheet
+
+h2. Overview
+
+This change extends the product details sidesheet in the QER new-request flow to display additional information from the assigned service category and its parent category.
+
+The enhancement gives users more context about the selected product without changing the existing sidesheet behavior for products that do not have a linked service category hierarchy.
+
+h2. Functional Goal
+
+When a user opens the product details sidesheet for a requestable product, the application should:
+
+# Read the product's **UID_AccProductGroup**.
+# Resolve the corresponding service category.
+# Resolve the parent service category if one exists.
+# Pass both entities to the sidesheet.
+# Render description and remarks for both hierarchy levels in the details tab.
+
+h2. Scope of the Change
+
+The implementation adds read-only contextual information to the existing product details view.
+
+Included:
+
+* Display of the direct service category assigned to the product
+* Display of the parent service category when available
+* Fallback behavior when category data is missing
+
+Not included:
+
+* No change to product assignment or request logic
+* No modification of service category data
+* No additional tab or action for service categories
+
+h2. Implementation Summary
+
+The logic is implemented in:
+
+* `projects/qer/src/lib/new-request/new-request-product/product-details-sidesheet/product-details.service.ts`
+* `projects/qer/src/lib/new-request/new-request-product/product-details-sidesheet/product-details-sidesheet.component.ts`
+* `projects/qer/src/lib/new-request/new-request-product/product-details-sidesheet/product-details-sidesheet.component.html`
+
+h3. High-Level Flow
+
+# `showProductDetails(...)` loads the standard product details data.
+# The service calls `getServiceCategoryDetails(...)`.
+# The method reads `UID_AccProductGroup` from the selected product.
+# The direct service category is loaded through `ServiceCategoriesService`.
+# If the category has `UID_AccProductGroupParent`, the parent category is loaded as well.
+# Both objects are passed to the sidesheet data payload.
+# The UI renders parent category details first, followed by the direct category details.
+
+h2. TypeScript Service Implementation
+
+{code:language=ts|title=product-details.service.ts}
+public async showProductDetails(
+  item: PortalShopServiceitems,
+  recipients: IWriteValue<string>,
+): Promise<void> {
+  if (!this.projectConfig) {
+    this.projectConfig = await this.projectConfigService.getConfig();
+  }
+
+  const orderStatus = await this.getOrderStatus(item, recipients);
+
+  // Load the assigned service category plus its parent so the sidesheet can show both levels.
+  const serviceCategoryDetails = await this.getServiceCategoryDetails(item);
+
+  await this.sidesheetService
+    .open(ProductDetailsSidesheetComponent, {
+      title: await this.translateService
+        .get("#LDS#Heading View Product Details")
+        .toPromise(),
+      subTitle: item.GetEntity().GetDisplay(),
+      icon: "info",
+      width: "min(60%, 600px)",
+      padding: "0px",
+      testId: "product-details-sidesheet",
+      data: {
+        item,
+        serviceCategory: serviceCategoryDetails.serviceCategory,
+        parentServiceCategory: serviceCategoryDetails.parentServiceCategory,
+        orderStatus: orderStatus,
+        imageUrl: this.getProductImage(item),
+        projectConfig: this.projectConfig,
+      },
+    })
+    .afterClosed()
+    .toPromise();
+}
+
+// Resolve the product's service category chain once and pass the result to the UI.
+private async getServiceCategoryDetails(item: PortalShopServiceitems): Promise<{
+  serviceCategory?: PortalServicecategories;
+  parentServiceCategory?: PortalServicecategories;
+}> {
+  try {
+    const uidAccProductGroup = item
+      .GetEntity()
+      .GetColumn("UID_AccProductGroup")
+      .GetValue();
+
+    if (!uidAccProductGroup) {
+      return {};
+    }
+
+    const serviceCategory = await this.getServiceCategoryByUid(uidAccProductGroup);
+    // The parent UID is optional because top-level categories do not have a parent node.
+    const parentUid = serviceCategory?.UID_AccProductGroupParent?.value;
+
+    if (!parentUid) {
+      return { serviceCategory };
+    }
+
+    const parentServiceCategory = await this.getServiceCategoryByUid(parentUid);
+
+    return {
+      serviceCategory,
+      parentServiceCategory,
+    };
+  } catch (error) {
+    return {};
+  }
+}
+
+// Fetch a single service category entity for the requested UID.
+private async getServiceCategoryByUid(
+  uidAccProductGroup: string,
+): Promise<PortalServicecategories> {
+  try {
+    const categories = await this.serviceCategoriesService.get({
+      PageSize: 1,
+      filter: [
+        {
+          ColumnName: "UID_AccProductGroup",
+          Type: FilterType.Compare,
+          CompareOp: CompareOperator.Equal,
+          Value1: uidAccProductGroup,
+        },
+      ],
+    });
+
+    return categories?.Data?.[0];
+  } catch (error) {
+    return undefined;
+  }
+}
+{code}
+
+h3. TypeScript Service Commentary
+
+* `showProductDetails(...)` remains the central entry point and enriches the sidesheet payload with category hierarchy data.
+* `getServiceCategoryDetails(...)` resolves the direct service category and optionally its parent.
+* The check for `UID_AccProductGroup` prevents unnecessary lookups when the product is not linked to a category.
+* The `parentUid` handling documents that top-level categories do not have a parent.
+* `getServiceCategoryByUid(...)` isolates the filtered backend lookup into a dedicated helper.
+* Both methods return safe fallback values so the sidesheet still opens if category lookup fails.
+
+h2. TypeScript Component Implementation
+
+{code:language=ts|title=product-details-sidesheet.component.ts}
+export class ProductDetailsSidesheetComponent implements OnInit {
+  public hasEntitlements: boolean;
+  public onEntitlements = false;
+  /**
+   * A list of AccProduct properties, that can be customized in the Admin Portal:
+   * ServerConfig/ITShopConfig/AccProductProperties
+   */
+  protected accProductProperties: string[] = [];
+
+  /** A list of properties, that cannot be customized in the Admin Portal */
+  protected fixedProductProperties = [
+    "ServiceCategoryFullPath",
+    "TableName",
+    "Tags",
+  ];
+
+  protected ldsEntitlementInfo =
+    "#LDS#Here you can get an overview of the entitlements associated with the product. If you request the product, the recipient will get the listed entitlements.";
+
+  /** A mapping between properties/columns and a css class to visualize the property value */
+  private cssPropertyMapping = new Map<string, string>([
+    ["ServiceCategoryFullPath", "link"],
+    ["TableName", "bold"],
+    ["Tags", "bold"],
+    ["ArticleCode", "bold"],
+  ]);
+
+  constructor(
+    @Inject(EUI_SIDESHEET_DATA)
+    public data: {
+      item: PortalServiceitems;
+
+      // Child category directly linked to the selected product.
+      serviceCategory?: PortalServicecategories;
+      // Parent category shown as additional context above the direct category.
+      parentServiceCategory?: PortalServicecategories;
+
+      orderStatus: {
+        statusIcon: string;
+        statusDisplay: string;
+      } | null;
+      imageUrl: string;
+      projectConfig: QerProjectConfig;
+    },
+  ) {}
+
+  public ngOnInit(): void {
+    // Only these product tables expose entitlement data for the second tab.
+    this.hasEntitlements = ["ESet", "QERAssign"].includes(
+      this.getValue("TableName"),
+    );
+    this.accProductProperties =
+      this.data?.projectConfig?.ITShopConfig?.AccProductProperties ?? [];
+  }
+}
+{code}
+
+h3. TypeScript Component Commentary
+
+* The injected `data` object was extended with `serviceCategory` and `parentServiceCategory`.
+* `serviceCategory` represents the category directly assigned to the selected product.
+* `parentServiceCategory` provides the optional higher hierarchy level.
+* The component itself does not resolve category data; it only renders what the service provides.
+
+h2. HTML Implementation
+
+{code:language=html/xml|title=product-details-sidesheet.component.html}
+<!-- Show the parent category first so the hierarchy reads top-down. -->
+<div class="details-item" *ngIf="data.parentServiceCategory">
+  <div class="details-label">
+    {{
+      data.parentServiceCategory.Description.Column.GetMetadata().GetDisplay()
+    }}:
+  </div>
+  <div class="details-value">
+    {{
+      data.parentServiceCategory.Description.Column.GetDisplayValue().length > 0
+        ? data.parentServiceCategory.Description.Column.GetDisplayValue()
+        : ("#LDS#Not set" | translate)
+    }}
+  </div>
+</div>
+<div class="details-item" *ngIf="data.parentServiceCategory">
+  <div class="details-label">
+    {{
+      data.parentServiceCategory.Remarks.Column.GetMetadata().GetDisplay()
+    }}:
+  </div>
+  <div class="details-value">
+    {{
+      data.parentServiceCategory.Remarks.Column.GetDisplayValue().length > 0
+        ? data.parentServiceCategory.Remarks.Column.GetDisplayValue()
+        : ("#LDS#Not set" | translate)
+    }}
+  </div>
+</div>
+
+<!-- Show the category directly assigned to the product below its parent. -->
+<div class="details-item" *ngIf="data.serviceCategory">
+  <div class="details-label">
+    {{
+      data.serviceCategory.Description.Column.GetMetadata().GetDisplay()
+    }}:
+  </div>
+  <div class="details-value">
+    {{
+      data.serviceCategory.Description.Column.GetDisplayValue().length > 0
+        ? data.serviceCategory.Description.Column.GetDisplayValue()
+        : ("#LDS#Not set" | translate)
+    }}
+  </div>
+</div>
+
+<div class="details-item" *ngIf="data.serviceCategory">
+  <div class="details-label">
+    {{ data.serviceCategory.Remarks.Column.GetMetadata().GetDisplay() }}:
+  </div>
+  <div class="details-value">
+    {{
+      data.serviceCategory.Remarks.Column.GetDisplayValue().length > 0
+        ? data.serviceCategory.Remarks.Column.GetDisplayValue()
+        : ("#LDS#Not set" | translate)
+    }}
+  </div>
+</div>
+{code}
+
+h3. HTML Commentary
+
+* `*ngIf="data.parentServiceCategory"` ensures that parent category fields are rendered only when parent data is available.
+* The parent category is displayed before the direct category so the hierarchy is understandable from top to bottom.
+* `Description` and `Remarks` are rendered separately to expose the most useful category metadata.
+* `GetMetadata().GetDisplay()` provides the configured display caption for the label.
+* `GetDisplayValue()` provides the user-facing value for each field.
+* The fallback to `"#LDS#Not set"` prevents empty rows in the UI.
+* `*ngIf="data.serviceCategory"` ensures that the direct category block is only shown when the lookup was successful.
+
+h2. Important Design Decisions
+
+* The implementation is intentionally non-invasive and extends the existing details tab.
+* Parent category data is optional and only shown when a parent exists.
+* The direct service category remains the main category shown for the selected product.
+* Failures during category lookup must not block the sidesheet from opening.
+* Empty or missing category data results in omitted UI blocks instead of runtime errors.
+
+h2. Expected Behavior After Change
+
+* Product with direct service category and parent category: both hierarchy levels are shown.
+* Product with direct service category but no parent: only the direct category is shown.
+* Product without `UID_AccProductGroup`: no additional category section is shown.
+* Lookup error during category loading: sidesheet still opens without service category details.
