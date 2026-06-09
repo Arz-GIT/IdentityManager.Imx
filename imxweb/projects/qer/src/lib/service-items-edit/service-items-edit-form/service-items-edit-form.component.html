@@ -14,7 +14,7 @@
 
     <mat-slide-toggle #toggle class="imx-custom-toggle" [formControl]="isInActiveFormControl"
       *ngIf="serviceItem && canEditProperty('IsInActive')"
-      (change)="onRequestableToggleChanged($event)" [disabled]="!getColumn('IsInActive')?.GetMetadata().CanEdit()"
+      (change)="onRequestableToggleChanged($event)"
       [attr.data-imx-identifier]="'service-items-edit-form-toggle-for-column-' + serviceItem?.IsInActive?.Column?.ColumnName">
       <span [translate]="toggle.checked ? '#LDS#Requestable' : '#LDS#Not requestable'"></span>
     </mat-slide-toggle>

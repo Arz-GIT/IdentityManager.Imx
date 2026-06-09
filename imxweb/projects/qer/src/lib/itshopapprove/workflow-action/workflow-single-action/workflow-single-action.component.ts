@@ -73,12 +73,11 @@ export class WorkflowSingleActionComponent implements OnInit {
    */
   public currentStepCdr: ColumnDependentReference;
 
-
   /**
    * @ignore since this is only public because of databinding to the template
    * The reference depending on the compliance violation of the request that is displayed during the decision.
    */
-  public complianceCdr: ColumnDependentReference|undefined;
+  public complianceCdr: ColumnDependentReference | undefined;
 
   /**
    * @ignore since this is only public because of databinding to the template
@@ -109,6 +108,7 @@ export class WorkflowSingleActionComponent implements OnInit {
    * Sets up the {@link columns} to be displayed/edited during OnInit lifecycle hook.
    */
   public async ngOnInit(): Promise<void> {
+    this.stepService.isEscalationApprover = this.data.isInEscalationView ?? false;
     this.request = this.data.requests[0];
 
     this.columns.push(new BaseReadonlyCdr(this.request.OrderState.Column));
@@ -125,7 +125,7 @@ export class WorkflowSingleActionComponent implements OnInit {
       this.columns.push(new BaseCdr(this.request.ValidUntil.Column));
     }
 
-    if(this.request.ValidUntilProlongation?.value && this.request.OrderState.value === 'OrderProlongate') {
+    if (this.request.ValidUntilProlongation?.value && this.request.OrderState.value === 'OrderProlongate') {
       this.columns.push(new BaseCdr(this.request.ValidUntilProlongation.Column));
     }
 

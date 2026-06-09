@@ -121,7 +121,7 @@ export abstract class EditorBase<T = any> implements CdrEditor, OnDestroy {
       if (cdref.minlengthSubject) {
         this.subscribers.push(
           cdref.minlengthSubject.subscribe((elem) => {
-            this.setControlValue();
+            this.setControlValue(true);
           })
         );
       }
@@ -158,7 +158,10 @@ export abstract class EditorBase<T = any> implements CdrEditor, OnDestroy {
                   this.control.value
                 );
                 this.setControlValue();
-                this.control.updateValueAndValidity({ onlySelf: true, emitEvent: false });
+                this.control.updateValueAndValidity({ onlySelf: false, emitEvent: false });
+              } else {
+                this.setControlValue(true);
+                this.control.updateValueAndValidity({ onlySelf: false, emitEvent: false });
               }
             } finally {
             }
@@ -176,8 +179,12 @@ export abstract class EditorBase<T = any> implements CdrEditor, OnDestroy {
   /**
    * Updates the value of the form control as well as its validators.
    */
-  private setControlValue(): void {
-    this.control.setValue(this.columnContainer.value, { emitEvent: false });
+  private setControlValue(validationOnly: boolean = false): void {
+    // Update the control value only if not in validationOnly mode
+    if (!validationOnly) {
+      this.control.setValue(this.columnContainer.value, { emitEvent: false });
+    }
+    // Update the validators
     if (
       this.columnContainer.isValueRequired &&
       this.columnContainer.canEdit &&
@@ -229,7 +236,7 @@ export abstract class EditorBase<T = any> implements CdrEditor, OnDestroy {
     this.valueHasChanged.emit({ value, forceEmit: true });
   }
 
-  private static hasServerError(base: any): ValidatorFn {
+  public static hasServerError(base: any): ValidatorFn {
     return (_: AbstractControl): { [key: string]: boolean } | null => {
       return !base.lastError ? null : { generalError: true };
     };

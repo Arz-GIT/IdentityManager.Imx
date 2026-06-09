@@ -9,7 +9,7 @@
  * those terms.
  *
  *
- * Copyright 2023 One Identity LLC.
+ * Copyright 2024 One Identity LLC.
  * ALL RIGHTS RESERVED.
  *
  * ONE IDENTITY LLC. MAKES NO REPRESENTATIONS OR
@@ -24,31 +24,15 @@
  *
  */
 
-import { OverlayRef } from "@angular/cdk/overlay";
-import { Injectable } from "@angular/core";
-import { EuiLoadingService } from "@elemental-ui/core";
+import { NumberError } from '../edit-number/number-error.interface';
 
-@Injectable({
-  providedIn: 'root'
-})
-export class ChangeViewService {
-
-  constructor(private readonly busyService: EuiLoadingService) { }
-  
-  private busyIndicator: OverlayRef;
-
-  public handleOpenLoader(): void {
-    if (!this.busyIndicator) {
-      setTimeout(() => this.busyIndicator = this.busyService.show());
-    }
-  }
-
-  public handleCloseLoader(): void {
-    if (this.busyIndicator) {
-      setTimeout(() => {
-        this.busyService.hide(this.busyIndicator);
-        this.busyIndicator = undefined;
-      });
-    }
-  }
+/**
+ * Represents an error state for number range values.
+ * Extends NumberError with range-specific validation errors.
+ */
+export interface NumberRangeError extends NumberError {
+  /**
+   * Indicates that the 'from' value is greater than the 'to' value.
+   */
+  rangeOrder?: boolean;
 }

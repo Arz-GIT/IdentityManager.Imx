@@ -44,7 +44,7 @@ import { WorkflowActionEditWrapper } from './workflow-action-edit-wrapper.interf
 import { WorkflowActionParameters } from './workflow-action-parameters.interface';
 import { TermsOfUseAcceptComponent } from '../../terms-of-use/terms-of-use-accept.component';
 import { UserModelService } from '../../user/user-model.service';
-
+import { getSubLevel } from '../decision-step.service';
 @Injectable({
   providedIn: 'root',
 })
@@ -64,7 +64,7 @@ export class WorkflowActionService {
     private readonly approvalsService: ApprovalsService,
     private readonly justificationService: JustificationService,
     private readonly userService: UserModelService,
-    private readonly extService: ExtService
+    private readonly extService: ExtService,
   ) {}
 
   public async directDecisions(requests: Approval[], userUid: string): Promise<void> {
@@ -89,7 +89,7 @@ export class WorkflowActionService {
       if (workFlowDataCollection && workFlowDataCollection.Data) {
         const levelNumbers = request.getLevelNumbers(userUid);
         workflow.data[request.key] = workFlowDataCollection.Data.filter((item) => levelNumbers.includes(item.LevelNumber.value)).map(
-          (item) => item.GetEntity()
+          (item) => item.GetEntity(),
         );
       }
     }
@@ -256,9 +256,8 @@ export class WorkflowActionService {
     return this.apiService.v2Client.portal_itshop_approve_requests_stepup_post({ UidPwo: uidPwo });
   }
 
-  public async approve(requests: Approval[]): Promise<void> {
-
-    const term = (await this.checkTermsOfUse(requests));
+  public async approve(requests: Approval[], user: string, isEscalation: boolean): Promise<void> {
+    const term = await this.checkTermsOfUse(requests);
     if (!term.isChecked) {
       this.snackBar.open({ key: '#LDS#You have canceled the action.' });
       return;
@@ -270,7 +269,7 @@ export class WorkflowActionService {
     const mfaRequests = requests.filter((req) => req.IsApproveRequiresMfa?.value);
     if (itShopConfig.StepUpAuthenticationProvider !== 'NoAuth' && mfaRequests.length > 0) {
       // Check for MFA, don't continue unless true
-      const isMFA = term.isAuthenticated || await this.checkMFA(mfaRequests.map((request) => request.key));
+      const isMFA = term.isAuthenticated || (await this.checkMFA(mfaRequests.map((request) => request.key)));
       if (!isMFA) {
         return;
       }
@@ -338,6 +337,7 @@ export class WorkflowActionService {
         approve: true,
         actionParameters,
         showValidDate,
+        isInEscalationView: isEscalation,
         withGuidance: true,
       },
       apply: async (request: Approval) => {
@@ -360,12 +360,13 @@ export class WorkflowActionService {
           Reason: actionParameters.reason.column.GetValue(),
           UidJustification: actionParameters.justification?.column?.GetValue(),
           Decision: true,
+          SubLevel: getSubLevel(request, request.pwoData, user, isEscalation),
         });
       },
     });
   }
 
-  public async deny(requests: Approval[]): Promise<void> {
+  public async deny(requests: Approval[], isEscalation: boolean): Promise<void> {
     const itShopConfig = (await this.projectConfig.getConfig()).ITShopConfig;
 
     let justification: BaseCdr;
@@ -394,6 +395,7 @@ export class WorkflowActionService {
         requests,
         actionParameters,
         withGuidance: true,
+        isInEscalationView: isEscalation,
         customValidation: itShopConfig.VI_ITShop_ApproverReasonMandatoryOnDeny
           ? {
               validate: () => {
@@ -485,22 +487,22 @@ export class WorkflowActionService {
         this.entityService.createLocalEntityColumn(
           { Type: ValType.Date, ColumnName: 'DateHead', Display: '#LDS#Inquiry made on' },
           undefined,
-          pwo.Columns.DateHead
-        )
+          pwo.Columns.DateHead,
+        ),
       ),
       new BaseReadonlyCdr(
         this.entityService.createLocalEntityColumn(
           { Type: ValType.String, ColumnName: 'ReasonHead', Display: '#LDS#Inquiry' },
           undefined,
-          pwo.Columns.ReasonHead
-        )
+          pwo.Columns.ReasonHead,
+        ),
       ),
       new BaseReadonlyCdr(
         this.entityService.createLocalEntityColumn(
           { Type: ValType.String, ColumnName: 'DisplayPersonHead', Display: '#LDS#Inquiry made by' },
           undefined,
-          pwo.Columns.DisplayPersonHead
-        )
+          pwo.Columns.DisplayPersonHead,
+        ),
       ),
     ];
 
@@ -516,13 +518,21 @@ export class WorkflowActionService {
     });
   }
 
-  public getPwoData(pwo: Approval, userUid: string): EntityData {
-    return pwo.pwoData.WorkflowHistory.Entities.find(
+  public getPwoData(pwo: Approval, userUid: string): EntityData | undefined {
+    const questionHistory = pwo.pwoData.WorkflowHistory?.Entities?.filter(
       (entityData) =>
-        entityData.Columns.DecisionType.Value === 'Query' &&
-        entityData.Columns.UID_PersonRelated.Value === userUid &&
-        entityData.Columns.DecisionLevel.Value === pwo.DecisionLevel.value
-    );
+        entityData.Columns?.DecisionType.Value === 'Query' &&
+        entityData.Columns?.UID_PersonRelated.Value === userUid &&
+        entityData.Columns?.DecisionLevel.Value === pwo.DecisionLevel.value,
+    ).sort((a, b) => {
+      const d1 = a.Columns?.XDateInserted?.Value;
+      const d2 = b.Columns?.XDateInserted?.Value;
+
+      if (!d1 || !d2) return 0;
+      // Sort descending
+      return new Date(d2).getTime() - new Date(d1).getTime();
+    });
+    return questionHistory?.[0];
   }
 
   private async editAction(config: WorkflowActionEditWrapper): Promise<void> {
@@ -559,7 +569,7 @@ export class WorkflowActionService {
             config.data.requests.length,
             config.data.actionParameters.uidPerson ? config.data.actionParameters.uidPerson.column.GetDisplayValue() : '',
           ],
-        });        
+        });
         await this.userService.reloadPendingItems();
         this.applied.next();
       }
@@ -610,7 +620,7 @@ export class WorkflowActionService {
         FkRelation: fkRelation,
         MinLen: 1,
       },
-      [this.person.createFkProviderItem(fkRelation)]
+      [this.person.createFkProviderItem(fkRelation)],
     );
 
     return new BaseCdr(column, display);
@@ -635,7 +645,7 @@ export class WorkflowActionService {
         this.person.createFkProviderItem(fkRelation, [
           { ColumnName: 'UID_Person', CompareOp: CompareOperator.NotEqual, Type: FilterType.Compare, Value1: uidPerson },
         ]),
-      ]
+      ],
     );
 
     return new BaseCdr(column, '#LDS#Recipient of the inquiry');
@@ -644,13 +654,13 @@ export class WorkflowActionService {
   private async checkTermsOfUse(requests: Approval[]): Promise<{ isChecked: boolean; isAuthenticated: boolean }> {
     // get all cart items with terms of uses
     const approvalItemsWithTermsOfUseToAccept = requests.filter(
-      (item) => item.UID_QERTermsOfUse?.value !== null && item.UID_QERTermsOfUse?.value !== ''
+      (item) => item.UID_QERTermsOfUse?.value !== null && item.UID_QERTermsOfUse?.value !== '',
     );
 
     if (approvalItemsWithTermsOfUseToAccept.length > 0) {
       this.logger.debug(
         this,
-        `There are ${approvalItemsWithTermsOfUseToAccept.length} service items with terms of use the user have to accepted.`
+        `There are ${approvalItemsWithTermsOfUseToAccept.length} service items with terms of use the user have to accepted.`,
       );
 
       const termsOfUseAccepted = await this.sideSheet
@@ -670,7 +680,7 @@ export class WorkflowActionService {
       return termsOfUseAccepted;
     } else {
       this.logger.debug(this, 'there are no service items with terms of use the user have to accepted.');
-      return { isChecked: true, isAuthenticated: false}
+      return { isChecked: true, isAuthenticated: false };
     }
   }
 }

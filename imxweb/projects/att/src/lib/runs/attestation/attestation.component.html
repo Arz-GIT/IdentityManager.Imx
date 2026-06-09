@@ -18,11 +18,11 @@
 
 <div eui-sidesheet-actions>
   <div class="imx-menu-spacer"></div>
-  <button data-imx-identifier="attestation-deny-selected-button" mat-flat-button color="warn" (click)="attestationAction.deny(selectedCases)" [disabled]="!canDecide">
+  <button data-imx-identifier="attestation-deny-selected-button" mat-flat-button color="warn" (click)="attestationAction.deny(selectedCases, viewEscalation)" [disabled]="!canDecide">
     <mat-icon>not_interested</mat-icon>
     <span translate>#LDS#Deny</span>
   </button>
-  <button data-imx-identifier="attestation-approve-selected-button" mat-flat-button color="primary" (click)="attestationAction.approve(selectedCases)" [disabled]="!canDecide">
+  <button data-imx-identifier="attestation-approve-selected-button" mat-flat-button color="primary" (click)="attestationAction.approve(selectedCases, viewEscalation)" [disabled]="!canDecide">
     <eui-icon icon="check"></eui-icon>
     <span translate>#LDS#Approve</span>
   </button>

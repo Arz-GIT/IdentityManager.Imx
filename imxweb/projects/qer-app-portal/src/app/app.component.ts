@@ -101,7 +101,7 @@ export class AppComponent implements OnInit, OnDestroy {
           const systemInfo = await systemInfoService.get();
           const groups = (await userModelService.getGroups()).map((group) => group.Name || '');
           this.profileSettings = await this.qerClient.v2Client.portal_profile_get();
-          const isUseProfileLangChecked = this.profileSettings.UseProfileLanguage ?? false;
+          const isUseProfileLangChecked = this.profileSettings.UseProfileLanguage ?? config.PersonConfig?.UseProfileCulture ?? false;
           // Set session culture if isUseProfileLangChecked is true, set browser culture otherwise
           if (isUseProfileLangChecked) {
             await this.translationProvider.init(sessionState.culture, sessionState.cultureFormat);

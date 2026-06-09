@@ -55,6 +55,8 @@ export class AttestationComponent implements OnDestroy {
 
   @Input() public parameters: { objecttable: string; objectuid: string; filter?: FilterData[] };
   @Input() public pendingAttestations: HelperAlertContent;
+  
+  @Input() viewEscalation: boolean;
 
   public readonly itemStatus = {
     enabled: (attestationCase) => attestationCase.isPending && this.attestationAction.canDecide(attestationCase, this.userUid),

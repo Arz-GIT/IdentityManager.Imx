@@ -206,7 +206,7 @@ export class AttestationActionService {
     });
   }
 
-  public async checkForViolations(attestationCases: AttestationCase[]): Promise<void> {
+  public async checkForViolations(attestationCases: AttestationCase[], isEscalation: boolean): Promise<void> {
     let isApprovable = true;
     for (const attestationCase of attestationCases) {
       const isAllAllowable = attestationCase.data.ComplianceViolations.every((item) => item.IsExceptionAllowed);
@@ -218,7 +218,7 @@ export class AttestationActionService {
     }
 
     if (isApprovable) {
-      return this.approve(attestationCases);
+      return this.approve(attestationCases, isEscalation);
     } else {
       let message: string;
       if (attestationCases.length === 1) {
@@ -261,7 +261,7 @@ export class AttestationActionService {
     return response;
   }
 
-  public async approve(attestationCases: AttestationCaseAction[]): Promise<void> {
+  public async approve(attestationCases: AttestationCaseAction[], isEscalation: boolean): Promise<void> {
     // Check is any case has an MFA property, open sidesheet if so
     const uidCases: string[] = [];
     const anyMFACases = attestationCases
@@ -277,12 +277,12 @@ export class AttestationActionService {
         return;
       }
     }
-    return this.makeDecisions(attestationCases, true);
+    return this.makeDecisions(attestationCases, true, isEscalation);
   }
 
-  public async deny(attestationCases: AttestationCaseAction[]): Promise<void> {
+  public async deny(attestationCases: AttestationCaseAction[], isEscalation: boolean): Promise<void> {
     // TODO later: preview effects of auto-remove before making negative decision (ATT_AttestationCase_PreviewAutoRemove)
-    return this.makeDecisions(attestationCases, false);
+    return this.makeDecisions(attestationCases, false, isEscalation);
   }
 
   public async answerQuestion(attestationCase: AttestationCase): Promise<void> {
@@ -451,7 +451,7 @@ export class AttestationActionService {
     return new BaseCdr(column, '#LDS#Recipient of the inquiry');
   }
 
-  private async makeDecisions(attestationCases: AttestationCaseAction[], approve: boolean): Promise<void> {
+  private async makeDecisions(attestationCases: AttestationCaseAction[], approve: boolean, isEscalation: boolean): Promise<void> {
     let justification: ColumnDependentReference;
 
     let busyIndicator: OverlayRef;
@@ -480,7 +480,7 @@ export class AttestationActionService {
 
     return this.editAction({
       title: approve ? '#LDS#Heading Approve Attestation Case' : '#LDS#Heading Deny Attestation Case',
-      data: { attestationCases, actionParameters, approve, maxReasonType },
+      data: { attestationCases, actionParameters, approve, maxReasonType, isEscalation },
       message: approve
         ? '#LDS#{0} attestation cases have been successfully approved.'
         : '#LDS#{0} attestation cases have been successfully denied.',
@@ -578,7 +578,7 @@ export class AttestationActionService {
           elem?.Columns?.Decision?.Value === ''
       )
     );
-    const sorted = data.sort((x,y) =>x.Columns?.SubLevelNumber?.Value-y.Columns?.SubLevelNumber?.Value); // Sort by SubLevelNumber, use smallest
+    const sorted = data.sort((x, y) => x.Columns?.SubLevelNumber?.Value - y.Columns?.SubLevelNumber?.Value); // Sort by SubLevelNumber, use smallest
     return sorted[0]?.Columns?.SubLevelNumber?.Value ?? 0; //return the sublevel number
   }
 }

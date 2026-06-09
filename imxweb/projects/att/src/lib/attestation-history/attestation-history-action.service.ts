@@ -76,13 +76,13 @@ export class AttestationHistoryActionService {
     return approverContainer.approverNow?.length > 0;
   }
 
-  public async approve(attestationCases: AttestationCaseAction[]): Promise<void> {
-    await this.action.approve(attestationCases);
+  public async approve(attestationCases: AttestationCaseAction[], isEscalation: boolean): Promise<void> {
+    await this.action.approve(attestationCases, isEscalation);
     this.applied.next();
   }
 
-  public async deny(attestationCases: AttestationCaseAction[]): Promise<void> {
-    await this.action.deny(attestationCases);
+  public async deny(attestationCases: AttestationCaseAction[], isEscalation: boolean): Promise<void> {
+    await this.action.deny(attestationCases, isEscalation);
     this.applied.next();
   }
 

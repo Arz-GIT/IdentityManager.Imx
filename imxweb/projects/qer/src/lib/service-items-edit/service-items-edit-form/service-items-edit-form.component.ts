@@ -35,7 +35,7 @@ import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 import { TranslateService } from '@ngx-translate/core';
 import { IEntity, IEntityColumn, TypedEntity } from 'imx-qbm-dbts';
 
-import { BaseCdr, ClassloggerService, ColumnDependentReference, CdrFactoryService, ExtService, BusyService } from 'qbm';
+import { BaseCdr, BusyService, CdrFactoryService, ClassloggerService, ColumnDependentReference, ExtService } from 'qbm';
 import { QerPermissionsService } from '../../admin/qer-permissions.service';
 import { OwnerControlComponent } from '../../owner-control/owner-control.component';
 import { ProjectConfigurationService } from '../../project-configuration/project-configuration.service';
@@ -90,8 +90,8 @@ export class ServiceItemsEditFormComponent implements OnInit, OnChanges {
     private readonly translate: TranslateService,
     private readonly permission: QerPermissionsService,
     private readonly projectConfig: ProjectConfigurationService,
-    private readonly cdrFactoryService: CdrFactoryService
-  ) {}
+    private readonly cdrFactoryService: CdrFactoryService,
+  ) { }
 
   get getSelectedUidPerson(): string {
     return this.ownercontrol?.uidPersonSelected;
@@ -187,7 +187,11 @@ export class ServiceItemsEditFormComponent implements OnInit, OnChanges {
       // Handle the requestable (IsInActive column) outside the context of a CDR editor so the UI can invert the meaning to make
       // more sense to the user
       // This should be inversed on the api data response at some point, but until then we handle it in the UI
-      this.isInActiveFormControl.setValue(!this.getColumn('IsInActive')?.GetValue());
+      const isInActiveColumn = this.getColumn('IsInActive');
+      this.isInActiveFormControl.setValue(!isInActiveColumn?.GetValue());
+      isInActiveColumn?.GetMetadata().CanEdit()
+        ? this.isInActiveFormControl.enable({ emitEvent: false })
+        : this.isInActiveFormControl.disable({ emitEvent: false });
       this.onFormControlCreated(this.isInActiveFormControl);
     }
 
