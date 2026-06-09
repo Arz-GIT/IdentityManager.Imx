@@ -26,7 +26,7 @@
 
 import { Component, Inject } from '@angular/core';
 import { UntypedFormGroup } from '@angular/forms';
-import { EuiSidesheetRef, EUI_SIDESHEET_DATA } from '@elemental-ui/core';
+import { EUI_SIDESHEET_DATA, EuiSidesheetRef } from '@elemental-ui/core';
 
 import { DisplayColumns, IEntity } from 'imx-qbm-dbts';
 import { BaseCdr, BaseReadonlyCdr, BulkItem, BulkItemStatus, ColumnDependentReference, DataSourceToolbarSettings } from 'qbm';
@@ -64,10 +64,12 @@ export class AttestationActionComponent {
       };
       approve?: boolean;
       maxReasonType: number;
+      isEscalation: boolean;
     },
     public readonly sideSheetRef: EuiSidesheetRef,
     stepService: DecisionStepSevice
   ) {
+    stepService.isEscalationApprover = data.isEscalation;
     Object.keys(this.data.actionParameters).forEach((name) => this.actionParameters.push(this.data.actionParameters[name]));
 
     if (this.data.attestationCases.length === 1) {

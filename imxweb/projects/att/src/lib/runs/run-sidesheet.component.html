@@ -1,18 +1,16 @@
 <mat-tab-group *ngIf="run" (selectedTabChange)="onTabChange($event)">
   <mat-tab [label]="'#LDS#Heading Information' | translate" data-imx-identifier="run-sidesheet-tab-details">
     <div class="imx-tab-content-body">
-      <mat-accordion class="imx-progress-content" multi="false"
-        data-imx-identifier="run-sidesheet-tab-details-accordeon">
-        <mat-expansion-panel [expanded]="true" class="imx-run-info-category"
-          data-imx-identifier="run-sidesheet-tab-details-accordeon-general">
+      <mat-accordion class="imx-progress-content" multi="false" data-imx-identifier="run-sidesheet-tab-details-accordeon">
+        <mat-expansion-panel [expanded]="true" class="imx-run-info-category" data-imx-identifier="run-sidesheet-tab-details-accordeon-general">
           <mat-expansion-panel-header>
             <mat-panel-title>
               <span>{{ '#LDS#General' | translate }}</span>
               <eui-badge *ngIf="data.completed">
-                {{ '#LDS#Completed' | translate}}
+                {{ '#LDS#Completed' | translate }}
               </eui-badge>
               <eui-badge *ngIf="run.CountChunksUnderConstruction.value > 0">
-                {{'#LDS#In progress' | translate}}
+                {{ '#LDS#In progress' | translate }}
               </eui-badge>
             </mat-panel-title>
           </mat-expansion-panel-header>
@@ -26,8 +24,7 @@
           </div>
         </mat-expansion-panel>
 
-        <mat-expansion-panel #detailPanel class="imx-run-info-category"
-          data-imx-identifier="run-sidesheet-tab-details-accordeon-attestation-details">
+        <mat-expansion-panel #detailPanel class="imx-run-info-category" data-imx-identifier="run-sidesheet-tab-details-accordeon-attestation-details">
           <mat-expansion-panel-header>
             <mat-panel-title>
               {{ '#LDS#Attestation details' | translate }}
@@ -48,20 +45,16 @@
               <div class="imx-property-display">
                 <span>
                   {{ run.Speed.Column.GetMetadata().GetDisplay() }}
-                  <eui-icon class="help-icon" icon="help"
-                    [matTooltip]="'#LDS#Attestation cases canceled by the system are not taken into account here.' | translate">
-                  </eui-icon>
+                  <eui-icon class="help-icon" icon="help" [matTooltip]="'#LDS#Attestation cases canceled by the system are not taken into account here.' | translate"> </eui-icon>
                 </span>
-                <span>{{ '#LDS#{0} attestations/day' | translate | ldsReplace:run.Speed.Column.GetDisplayValue()
-                  }}</span>
+                <span>{{ '#LDS#{0} attestations/day' | translate | ldsReplace : run.Speed.Column.GetDisplayValue() }}</span>
               </div>
             </div>
-            <imx-case-chart [run]="run" [ngStyle]="{opacity: detailPanel.expanded ? '1' : '0'}"></imx-case-chart>
+            <imx-case-chart [run]="run" [ngStyle]="{ opacity: detailPanel.expanded ? '1' : '0' }"></imx-case-chart>
           </div>
         </mat-expansion-panel>
 
-        <mat-expansion-panel class="imx-run-info-category"
-          data-imx-identifier="run-sidesheet-tab-details-accordeon-forecast">
+        <mat-expansion-panel class="imx-run-info-category" data-imx-identifier="run-sidesheet-tab-details-accordeon-forecast">
           <mat-expansion-panel-header>
             <mat-panel-title>
               {{ '#LDS#Attestation prediction' | translate }}
@@ -71,16 +64,14 @@
             <div class="imx-property-display">
               <span>{{ '#LDS#Estimated progress on due date' | translate }}</span>
               <ng-container *ngIf="run.DueDate.value && run.SecondsLeft.value > 0; else forecastNotApplicable">
-                <imx-progress [attestationRun]="run" [limit]="attestationRunConfig?.LimitGood" [forecast]="true">
-                </imx-progress>
+                <imx-progress [attestationRun]="run" [limit]="attestationRunConfig?.LimitGood" [forecast]="true"> </imx-progress>
               </ng-container>
               <ng-template #forecastNotApplicable>
                 <div *ngIf="!run.DueDate.value; else overDue">
                   {{ '#LDS#No prediction possible because the attestation run has no due date.' | translate }}
                 </div>
                 <ng-template #overDue>
-                  <div>{{ '#LDS#No prediction possible because the attestation run is already overdue.' | translate }}
-                  </div>
+                  <div>{{ '#LDS#No prediction possible because the attestation run is already overdue.' | translate }}</div>
                 </ng-template>
               </ng-template>
             </div>
@@ -88,30 +79,28 @@
             <div class="imx-property-display">
               <span>
                 {{ run.Speed.Column.GetMetadata().GetDisplay() }}
-                <eui-icon class="help-icon" icon="help"
-                  [matTooltip]="'#LDS#Attestation cases canceled by the system are not taken into account here.' | translate">
-                </eui-icon>
+                <eui-icon class="help-icon" icon="help" [matTooltip]="'#LDS#Attestation cases canceled by the system are not taken into account here.' | translate"> </eui-icon>
               </span>
-              <span>{{ '#LDS#{0} attestations/day' | translate | ldsReplace:run.Speed.Column.GetDisplayValue() }}</span>
+              <span>{{ '#LDS#{0} attestations/day' | translate | ldsReplace : run.Speed.Column.GetDisplayValue() }}</span>
             </div>
             <imx-entity-column-editor [column]="run.ForecastClosedCases.Column"></imx-entity-column-editor>
             <div class="imx-property-display">
               <span>{{ '#LDS#Estimated completion of the attestation run' | translate }}</span>
               <span>
-                {{ run.ForecastRemainingDays.value ?
-                ('#LDS#{0} days' | translate |
-                ldsReplace:(run.ForecastRemainingDays.value)) :( '#LDS#N/A' | translate) }}
+                {{ run.ForecastRemainingDays.value ? ('#LDS#{0} days' | translate | ldsReplace : run.ForecastRemainingDays.value) : ('#LDS#N/A' | translate) }}
               </span>
             </div>
             <imx-entity-column-editor [column]="run.Delay.Column"></imx-entity-column-editor>
             <imx-entity-column-editor [column]="run.RunCategory.Column"></imx-entity-column-editor>
             <p class="imx-category-message">
-              {{ categoryExplanation.message | translate | ldsReplace:categoryExplanation.limit }}</p>
-
+              {{ categoryExplanation.message | translate | ldsReplace : categoryExplanation.limit }}
+            </p>
           </ng-container>
           <ng-container *ngIf="run.Progress.value * 100 <= threshold">
             <p class="imx-category-message">
-              {{ '#LDS#The prediction is available as soon as at least {0}% of the attestation cases of this attestation run have been closed.' | translate |ldsReplace:threshold }}
+              {{
+                '#LDS#The prediction is available as soon as at least {0}% of the attestation cases of this attestation run have been closed.' | translate | ldsReplace : threshold
+              }}
             </p>
           </ng-container>
           <ng-container *ngIf="data.completed">
@@ -126,30 +115,23 @@
         <button data-imx-identifier="run-button-download-report" mat-stroked-button [euiDownload]="reportDownload">
           {{ '#LDS#Download report' | translate }}
         </button>
-        <button data-imx-identifier="run-button-extend-attestation" mat-stroked-button (click)="extendAttestationRun()"
-          [disabled]="!run.PendingCases.value">
+        <button data-imx-identifier="run-button-extend-attestation" mat-stroked-button (click)="extendAttestationRun()" [disabled]="!run.PendingCases.value">
           {{ '#LDS#Extend attestation run' | translate }}
         </button>
-        <button data-imx-identifier="run-button-send-reminder" mat-stroked-button
-          (click)="runsService.sendReminderEmail([run])" [disabled]="!run.PendingCases.value">
+        <button data-imx-identifier="run-button-send-reminder" mat-stroked-button (click)="runsService.sendReminderEmail([run])" [disabled]="!run.PendingCases.value">
           {{ '#LDS#Send reminder to all attestors' | translate }}
         </button>
       </div>
     </div>
   </mat-tab>
 
-  <mat-tab *ngIf="data.canSeeAttestationPolicies" [label]="'#LDS#Attestors' | translate"
-    data-imx-identifier="run-sidesheet-tab-attestators">
-    <imx-attestation-run-approvers [dataSource]="approvers"
-      (sendReminder)="runsService.sendReminderEmail([run], $event)"></imx-attestation-run-approvers>
+  <mat-tab *ngIf="data.canSeeAttestationPolicies" [label]="'#LDS#Attestors' | translate" data-imx-identifier="run-sidesheet-tab-attestators">
+    <imx-attestation-run-approvers [dataSource]="approvers" (sendReminder)="runsService.sendReminderEmail([run], $event)"></imx-attestation-run-approvers>
   </mat-tab>
 
-  <mat-tab *ngIf="data.canSeeAttestationPolicies" [label]="'#LDS#Attestation cases' | translate"
-    data-imx-identifier="run-sidesheet-tab-cases">
+  <mat-tab *ngIf="data.canSeeAttestationPolicies" [label]="'#LDS#Attestation cases' | translate" data-imx-identifier="run-sidesheet-tab-cases">
     <div class="imx-tab-content-body">
-      <imx-attestation [parameters]="attestationParameters" [pendingAttestations]="pendingAttestations"
-        (cancel)="cancel()">
-      </imx-attestation>
+      <imx-attestation [parameters]="attestationParameters" [pendingAttestations]="pendingAttestations" [viewEscalation]="false" (cancel)="cancel()"> </imx-attestation>
     </div>
   </mat-tab>
 </mat-tab-group>

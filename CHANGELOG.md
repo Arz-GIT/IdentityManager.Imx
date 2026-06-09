@@ -1,3 +1,45 @@
+### March 26, 2026
+- 702174 (646056): Fixes an issue with renewing a request that has a maximum valid days defined.
+- 698600 (647825): Fixes an error message on the Rule Violations page if the Riskindex config param is deactivated.
+- 699902: Fixes an issue with report parameters, rooted in an issue with the hierarchical FK editor.
+- Bumps packages so that we have less vulnerabilities in A14.
+
+### March 6, 2026
+- 655204: Fixes an issue with incomplete workflow steps for some recipients on the Pending Attestation Page.
+- 652590: Fixes an issue with inquiries that are between the same two people.
+- 679175 (651327): Fixes an issue with the history of a pending attestation case.
+- 508572: Fixes an issue with the "Readonly" property on a service item, which could be changed, although the value was read-only.
+- 651885: Fixes an issue with the "Show report" button on the Statistics.
+- 506868: Fixes an issue with the approval of policy violations.
+
+### January 9, 2026
+- 648346 (648345): Adds historical attestation decisions for an object.
+- 438842 (432021): Improves team role creation.
+
+### December 4, 2025
+- 545530:Fixes an issue with showing the standard reason for a request. The mandatory field for reason is not displayed correctly.
+- 581967 (549535): Fixes an exception when approving pending requests as a member of the chief approval team.
+- 549533: Fixes an issue with displaying a falsy message when accessing the pending requests page.
+- 621462: Fixes an issue with column-dependent references: When the required property changes, the control was not updated correctly.
+- 621261: Fixes a different exception when approving pending requests as a member of the chief approval team.
+
+### October 17, 2025
+- 493140:Fixes an issue with requests that are approved using an email link when the request was already approved.
+- 542531 (542744): Fixes an issue with server-side error messages on request properties that contain a request property parameter that is a multi-foreign-key value.
+- 518880: Fixes an issue with renewed products that should have a valid until date but were saved with an unlimited date.
+- 489411: Fixes an issue with adding items from shopping card bundles that have more than 20 items.
+
+### September 12, 2025
+- 505565: Fixes an issue with the Captcha, which prevented the user from entering if the scaling was set to 150%.
+- 501788: Fixes an issue with server-side error messages on request properties that contain a request property parameter that is multi-value.
+- 507806 (main work item 505517):  Fixes an undefined value exception when using deep-links in combination with OAuth (Github #356).
+- 494373: Fixes an issue with System Roles -> View Settings -> Additional columns: Column "Display name" is presented twice.
+- 506868: Fixes an issue with approving violations on the Pending Requests page.
+
+### August 8, 2025
+- 502690: Fixes an issue with server-side error messages on request properties that contain a list of permitted values.
+- 502805: Fixes a display issue with entitlement loss for a single attestation case, although multiple are selected.
+
 ### July 29, 2025
 - 502448: Fixes an issue with the Slovenian date format on the date control.
 - 503133: Adds missing paginator on the request history details side sheet (entitlements tab).

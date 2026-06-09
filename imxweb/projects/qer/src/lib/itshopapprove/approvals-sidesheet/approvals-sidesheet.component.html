@@ -33,8 +33,12 @@
   </button> -->
 
   <ng-container *ngIf="!data.fromInquiry">
-    <button mat-stroked-button data-imx-identifier="approvals-sidesheet-button-approve" (click)="actionService.approve([data.pwo])">{{ '#LDS#Approve' | translate }}</button>
-    <button mat-stroked-button data-imx-identifier="approvals-sidesheet-button-deny" (click)="actionService.deny([data.pwo])">{{ '#LDS#Deny' | translate }}</button>
+    <button mat-stroked-button data-imx-identifier="approvals-sidesheet-button-approve" (click)="actionService.approve([data.pwo], currentUserId, data.isUserEscalationApprover)">
+      {{ '#LDS#Approve' | translate }}
+    </button>
+    <button mat-stroked-button data-imx-identifier="approvals-sidesheet-button-deny" (click)="actionService.deny([data.pwo], data.isUserEscalationApprover)">
+      {{ '#LDS#Deny' | translate }}
+    </button>
     <button
       mat-stroked-button
       *ngIf="data.pwo.canRerouteDecision(currentUserId)"
@@ -55,7 +59,7 @@
     </button>
     <button
       mat-stroked-button
-      *ngIf="data.pwo.canDelegateDecision(currentUserId)"
+      *ngIf="data.pwo.canDelegateDecision(data.isUserEscalationApprover ? '' : currentUserId)"
       data-imx-identifier="approvals-sidesheet-button-delegate-approval"
       title="{{ '#LDS#Delegates the approval for this request to another identity' | translate }}"
       (click)="actionService.delegateDecisions([data.pwo])"
@@ -91,14 +95,14 @@
       {{ '#LDS#Escalate approval' | translate }}
     </button>
     <button
-    mat-stroked-button
-    *ngIf="data.pwo.CanAskForHelp.value"
-    data-imx-identifier="approvals-sidesheet-button-ask-for-helpl"
-    title="{{ '#LDS#Sends an inquiry about this request to an identity' | translate }}"
-    (click)="actionService.askForHelp([data.pwo],currentUserId)"
-  >
-    {{ '#LDS#Send inquiry' | translate }}
-  </button>
+      mat-stroked-button
+      *ngIf="data.pwo.CanAskForHelp.value"
+      data-imx-identifier="approvals-sidesheet-button-ask-for-helpl"
+      title="{{ '#LDS#Sends an inquiry about this request to an identity' | translate }}"
+      (click)="actionService.askForHelp([data.pwo], currentUserId)"
+    >
+      {{ '#LDS#Send inquiry' | translate }}
+    </button>
 
     <button
       mat-stroked-button
