@@ -49,8 +49,10 @@ import {
   UserMessageModule,
 } from 'qbm';
 import { ItshopPatternGuardService } from '../guards/itshop-pattern-guard.service';
+import { ShopAdminGuardService } from '../guards/shop-admin-guard.service';
 import { ServiceItemsModule } from '../service-items/service-items.module';
 import { UserModule } from '../user/user.module';
+import { isShopAdmin } from '../admin/qer-permissions-helper';
 import { DuplicatePatternItemsComponent } from './duplicate-pattern-items/duplicate-pattern-items.component';
 import { ItshopPatternAddProductsComponent } from './itshop-pattern-add-products/itshop-pattern-add-products.component';
 import { ItshopPatternCreateSidesheetComponent } from './itshop-pattern-create-sidesheet/itshop-pattern-create-sidesheet.component';
@@ -62,7 +64,7 @@ const routes: Routes = [
   {
     path: 'itshop/requesttemplates',
     component: ItshopPatternComponent,
-    canActivate: [ItshopPatternGuardService],
+    canActivate: [ItshopPatternGuardService, ShopAdminGuardService],
     resolve: [RouteGuardService],
     data: {
       contextId: HELP_CONTEXTUAL.RequestTemplates,
@@ -112,7 +114,7 @@ export class ItshopPatternModule {
       const items: MenuItem[] = [];
       const requestTemplatesEnabled = projectConfig.ITShopConfig?.VI_ITShop_ProductSelectionFromTemplate || false;
 
-      if (preProps.includes('ITSHOP') && requestTemplatesEnabled) {
+      if (preProps.includes('ITSHOP') && requestTemplatesEnabled && isShopAdmin(features)) {
         items.push({
           id: 'QER_Request_RequestTemplates',
           navigationCommands: {

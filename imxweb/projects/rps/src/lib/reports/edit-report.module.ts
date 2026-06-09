@@ -47,6 +47,7 @@ import {
   SqlWizardModule,
 } from 'qbm';
 import { RpsPermissionsService } from '../admin/rps-permissions.service';
+import { isRpsAdmin } from '../admin/permissions-helper';
 import { EditReportSidesheetComponent } from './edit-report-sidesheet/edit-report-sidesheet.component';
 import { EditReportComponent } from './edit-report.component';
 import { EditReportSqlWizardService } from './editreport-sqlwizard.service';
@@ -87,10 +88,10 @@ export class EditReportModule {
   }
 
   private setupMenu(): void {
-    this.menuService.addMenuFactories((preProps: string[], features: string[]) => {
+    this.menuService.addMenuFactories((preProps: string[], _features: string[], _projectConfig: unknown, groups: string[]) => {
       const items: MenuItem[] = [];
 
-      if (preProps.includes('REPORT_SUBSCRIPTION')) {
+      if (preProps.includes('REPORT_SUBSCRIPTION') && isRpsAdmin(groups)) {
         items.push({
           id: 'RPS_Reports',
           navigationCommands: {
