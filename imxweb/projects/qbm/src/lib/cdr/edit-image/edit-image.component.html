@@ -1,14 +1,16 @@
-<input [hidden]="true" #file type="file" multiple="false" accept="image/png" (change)="emitFiles($event.target.files)"/>
+<input [hidden]="true" #file type="file" multiple="false" accept="image/png" (change)="emitFiles($event.target.files)" />
 
-<imx-image-select *ngIf="columnContainer?.canEdit; else imageView"
+<imx-image-select
+  *ngIf="columnContainer?.canEdit; else imageView"
   [valueWrapper]="columnContainer"
   [control]="control"
   [fileFormatHint]="fileFormatHint"
   [isLoading]="isLoading"
-  (change)="resetFileFormatErrorState();file.click()"
-  (remove)="remove()">
+  (change)="resetFileFormatErrorState(); file.click()"
+  (remove)="remove()"
+>
 </imx-image-select>
-<mat-error *ngIf="control.errors?.['generalError']">
+<mat-error *ngIf="!!control.errors?.['generalError']">
   {{ validationErrorMessage }}
 </mat-error>
 

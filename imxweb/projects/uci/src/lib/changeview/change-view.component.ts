@@ -25,23 +25,15 @@
  */
 
 import { Component, OnInit } from '@angular/core';
-import { EuiSidesheetService } from '@elemental-ui/core';
+import { EuiLoadingService, EuiSidesheetService } from '@elemental-ui/core';
 import { TranslateService } from '@ngx-translate/core';
 
+import { OverlayRef } from '@angular/cdk/overlay';
 import { ManualChangeOperationData, OpsupportUciChangedetail, OpsupportUciChanges } from 'imx-api-uci';
-import {
-  CollectionLoadParameters,
-  DataModel,
-  DbObjectKey,
-  EntitySchema,
-  ExtendedTypedEntityCollection,
-  TypedEntity,
-  ValType,
-} from 'imx-qbm-dbts';
+import { CollectionLoadParameters, DataModel, DbObjectKey, EntitySchema, ExtendedTypedEntityCollection, TypedEntity } from 'imx-qbm-dbts';
 import { DataSourceToolbarFilter, DataSourceToolbarSettings, DataSourceWrapper, MetadataService } from 'qbm';
 import { UciApiService } from '../uci-api-client.service';
 import { ChangeSidesheetComponent } from './change-sidesheet.component';
-import { ChangeViewService } from './change-view.service';
 
 @Component({
   templateUrl: './change-view.component.html',
@@ -54,13 +46,15 @@ export class ChangeViewComponent implements OnInit {
   public selectedChange: OpsupportUciChanges;
   public entitySchema: EntitySchema;
   private filterOptions: DataSourceToolbarFilter[] = [];
+  private busyIndicator: OverlayRef;
+  private busyCounter = 0;
 
   constructor(
     private readonly translator: TranslateService,
     private readonly uciApi: UciApiService,
-    private readonly changeviewService: ChangeViewService,
     private readonly sidesheet: EuiSidesheetService,
-    private readonly metadatasvc: MetadataService
+    private readonly metadatasvc: MetadataService,
+    private readonly busyService: EuiLoadingService,
   ) {
     this.entitySchema = this.uciApi.typedClient.OpsupportUciChanges.GetSchema();
   }
@@ -87,14 +81,14 @@ export class ChangeViewComponent implements OnInit {
       this.entitySchema,
       {
         dataModel: dataModel,
-      }
+      },
     );
 
     await this.getData({ state: '0' }, true);
   }
 
   public async getData(newState?: CollectionLoadParameters & { state?: string }, isInitialLoad: boolean = false): Promise<void> {
-    this.changeviewService.handleOpenLoader();
+    this.handleOpenLoader();
     try {
       const s = await this.dstWrapper.getDstSettings(newState, undefined, isInitialLoad);
 
@@ -105,7 +99,7 @@ export class ChangeViewComponent implements OnInit {
 
       this.dstSettings = s;
     } finally {
-      this.changeviewService.handleCloseLoader();
+      this.handleCloseLoader();
     }
   }
 
@@ -115,13 +109,13 @@ export class ChangeViewComponent implements OnInit {
   }
 
   public async viewDetails(change: OpsupportUciChanges): Promise<void> {
-    this.changeviewService.handleOpenLoader();
+    this.handleOpenLoader();
     var details: ExtendedTypedEntityCollection<OpsupportUciChangedetail, ManualChangeOperationData>;
     try {
       const uidChange = change.GetEntity().GetKeys()[0];
       details = await this.uciApi.typedClient.OpsupportUciChangedetail.Get(uidChange);
     } finally {
-      this.changeviewService.handleCloseLoader();
+      this.handleCloseLoader();
     }
 
     const result = await this.sidesheet
@@ -143,5 +137,22 @@ export class ChangeViewComponent implements OnInit {
 
   public async getDataModel(): Promise<DataModel> {
     return this.uciApi.client.opsupport_uci_changes_datamodel_get();
+  }
+
+  private handleOpenLoader(): void {
+    this.busyCounter++;
+    if (!this.busyIndicator) {
+      this.busyIndicator = this.busyService.show();
+    }
+  }
+
+  private handleCloseLoader(): void {
+    if (this.busyCounter > 0) {
+      this.busyCounter--;
+    }
+    if (this.busyCounter === 0 && this.busyIndicator) {
+      this.busyService.hide(this.busyIndicator);
+      this.busyIndicator = undefined;
+    }
   }
 }
