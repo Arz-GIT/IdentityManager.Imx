@@ -48,6 +48,7 @@ import { EditReportComponent } from './edit-report.component';
 import { EditReportSidesheetComponent } from './edit-report-sidesheet/edit-report-sidesheet.component';
 import { EditReportSqlWizardService } from './editreport-sqlwizard.service';
 import { RpsPermissionsService } from '../admin/rps-permissions.service';
+import { isRpsAdmin } from '../admin/permissions-helper';
 
 @NgModule({
   declarations: [
@@ -90,11 +91,11 @@ export class EditReportModule {
 
   private setupMenu(): void {
     this.menuService.addMenuFactories(
-      (preProps: string[], features: string[]) => {
+      (preProps: string[], _features: string[], _projectConfig: unknown, groups: string[]) => {
 
         const items: MenuItem[] = [];
 
-        if (preProps.includes('REPORT_SUBSCRIPTION')) {
+        if (preProps.includes('REPORT_SUBSCRIPTION') && isRpsAdmin(groups)) {
           items.push(
             {
               id: 'RPS_Reports',

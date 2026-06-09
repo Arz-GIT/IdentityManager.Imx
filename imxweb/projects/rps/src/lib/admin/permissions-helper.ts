@@ -25,5 +25,5 @@
  */
 
 export function isRpsAdmin(groups: string[]): boolean {
-  return groups.find(item => item === 'vi_4_RPSADMIN_ADMIN') != null;
+  return groups.find(item => item.toUpperCase() === 'VI_4_RPSADMIN_ADMIN') != null;
 }

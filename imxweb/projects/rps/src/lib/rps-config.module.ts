@@ -34,12 +34,13 @@ import { EditReportComponent } from './reports/edit-report.component';
 import { EditReportModule } from './reports/edit-report.module';
 import { ReportButtonModule } from './report-button/report-button.module';
 import {StatisticReportButtonModule} from './statistic-report-button/statistic-report-button.module';
+import { RpsAdminGuardService } from './admin/rps-admin-guard.service';
 
 const routes: Routes = [
   {
     path: 'reports',
     component: EditReportComponent,
-    canActivate: [RouteGuardService],
+    canActivate: [RouteGuardService, RpsAdminGuardService],
     resolve: [RouteGuardService],
     data:{
       contextId: HELP_CONTEXTUAL.Reports
