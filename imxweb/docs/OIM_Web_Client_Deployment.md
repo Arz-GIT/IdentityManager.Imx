@@ -1,180 +1,106 @@
 # One Identity Manager Web Client Deployment
 
-This document describes how to build the One Identity Manager 9.2.2 web client packages and import them with the One Identity Software Loader.
+Diese Dokumentation beschreibt den Deployment-Prozess fuer den One Identity Manager Web Client direkt auf dem API Server. Es wird kein PowerShell-Deployment-Script und kein Software Loader verwendet.
 
-The process is intended for DEV first. Do not deploy directly to production without a tested DEV/QS rollout.
+Der Prozess ist zuerst fuer DEV vorgesehen. Kein direktes Deployment nach PROD ohne erfolgreich getesteten DEV/QS-Rollout.
 
-## Goal
+## Ziel
 
-Build the currently checked out web client source code and create OIM-compatible ZIP packages:
+Aus dem aktuell ausgecheckten Web-Client-Stand werden die benoetigten Web-Pakete gebaut und als ZIP-Dateien bereitgestellt.
+
+Standardfall fuer das Portal:
 
 ```text
-Html_qbm.zip
-Html_qer.zip
 Html_qer-app-portal.zip
-...
 ```
 
-These ZIP files are then imported with the One Identity Software Loader and assigned to the `Business API Server` machine role.
-
-## Important Concept
-
-The Git branch or tag that is checked out before running the script decides what will be packaged.
-
-For the clean vendor version:
-
-```powershell
-cd C:\Users\RPCIA984\Desktop\Project\IdentityManager.Imx\imxweb
-git checkout v9.2.2
-```
-
-For the customized version with internal changes:
-
-```powershell
-cd C:\Users\RPCIA984\Desktop\Project\IdentityManager.Imx\imxweb
-git checkout v92_build
-```
-
-The script does not switch branches automatically. This is intentional, so the operator always controls which version is deployed.
-
-## Build Script Location
-
-The build script is available here:
-
-```powershell
-C:\Users\RPCIA984\Desktop\build-oim-web-zips.ps1
-```
-
-There is also a copy in the repository workspace:
-
-```powershell
-C:\Users\RPCIA984\Desktop\Project\IdentityManager.Imx\imxweb\build-oim-web-zips.ps1
-```
-
-Run the script from the `imxweb` workspace folder.
-
-## Quick Start: Build All Web Packages
-
-Open PowerShell and run:
-
-```powershell
-cd C:\Users\RPCIA984\Desktop\Project\IdentityManager.Imx\imxweb
-git checkout v9.2.2
-C:\Users\RPCIA984\Desktop\build-oim-web-zips.ps1
-```
-
-The script runs `npm install`, builds all configured web projects, and creates the `Html_*.zip` files.
-
-By default, the ZIP files are written to:
-
-```powershell
-C:\oim-web-zips
-```
-
-To write the ZIP files to the Desktop instead:
-
-```powershell
-cd C:\Users\RPCIA984\Desktop\Project\IdentityManager.Imx\imxweb
-C:\Users\RPCIA984\Desktop\build-oim-web-zips.ps1 -OutputDir C:\Users\RPCIA984\Desktop\oim-web-zips
-```
-
-## Faster Build Without npm install
-
-If dependencies are already installed and unchanged, use:
-
-```powershell
-cd C:\Users\RPCIA984\Desktop\Project\IdentityManager.Imx\imxweb
-C:\Users\RPCIA984\Desktop\build-oim-web-zips.ps1 -SkipInstall
-```
-
-With an explicit output directory:
-
-```powershell
-cd C:\Users\RPCIA984\Desktop\Project\IdentityManager.Imx\imxweb
-C:\Users\RPCIA984\Desktop\build-oim-web-zips.ps1 -SkipInstall -OutputDir C:\Users\RPCIA984\Desktop\oim-web-zips
-```
-
-## Projects Built By The Script
-
-The script builds the following projects in dependency order:
+Wenn zusaetzliche Module betroffen sind, werden diese Module ebenfalls gebaut und als eigene ZIPs bereitgestellt, z. B.:
 
 ```text
-qbm
-qer
-tsb
-att
-rms
-aad
-aob
-uci
-cpl
-dpr
-rmb
-rps
-o3t
-olg
-hds
-pol
-qer-app-portal
-qbm-app-landingpage
-qer-app-operationssupport
-qer-app-pwdportal
-custom-app
+Html_rps.zip
 ```
 
-This creates a complete web client package set for the v92/OIM 9.2.2 web projects.
+Diese ZIP-Dateien werden anschliessend auf dem API Server unter `C:\inetpub\wwwroot\ApiServer\bin\imxweb\custom` abgelegt. Der API Server verwendet diese Pakete fuer die Auslieferung der Web-Anwendungen und zusaetzlichen Web-Module.
 
-## What The Script Does
+## Branch-Empfehlung
 
-The script performs these steps:
+Fuer neue Anpassungen sollte immer vom passenden Hersteller-Branch gestartet werden, z. B. `v92`.
+
+Empfohlener Ablauf:
 
 ```text
-1. Check that git, npm, and Compress-Archive are available.
-2. Check that package.json and angular.json exist in the current folder.
-3. Show the current Git branch, tag, or commit.
-4. Create the ZIP output folder.
-5. Run npm install unless -SkipInstall is used.
-6. Build every configured Angular library/app.
-7. Create one Html_<project>.zip per dist/<project> folder.
-8. Print a summary of all generated ZIP files.
+1. Neuen Feature-Branch von v92 erstellen, z. B. feature/my-change.
+2. Aenderung im Feature-Branch entwickeln und testen.
+3. Feature-Branch nach v92_build mergen.
+4. Deployment immer aus v92_build bauen.
 ```
 
-The script uses this build command internally:
+`v92_build` ist damit der gemeinsame Deployment-Branch. Dort sammeln sich alle bereits freigegebenen Features. So wird verhindert, dass beim Deployment versehentlich nur ein einzelner Feature-Branch gebaut wird und aeltere Anpassungen fehlen.
+
+Wichtig: Vor jedem Build pruefen, dass der aktuelle Git-Stand `v92_build` ist. Builds fuer das Deployment werden immer aus `v92_build` erstellt.
+
+## Portal Build
+
+Das Portal wird als Production Build gebaut:
 
 ```powershell
-npm run build <project>
+npm run build -- qer-app-portal --configuration production
 ```
 
-For each project, the script creates the ZIP from the content of:
+Dieses Kommando wird fuer das Deployment immer auf dem Branch `v92_build` ausgefuehrt.
+
+`qer-app-portal` wird aus den benoetigten Workspace-Abhaengigkeiten wie `qbm` und `qer` erzeugt. Fuer das normale Portal-Deployment wird deshalb das Portal-Paket `Html_qer-app-portal.zip` erzeugt.
+
+`qbm` und `qer` werden in diesem Prozess nicht als separate ZIPs deployed, solange sie nur als Abhaengigkeiten des Portals verwendet werden. Wenn eine Aenderung in `qbm` oder `qer` liegt, wird das Portal erneut als Production Build gebaut und anschliessend `Html_qer-app-portal.zip` ersetzt.
+
+## Zusaetzliche Module Bauen
+
+Wenn neben dem Portal weitere Module betroffen sind, muessen diese Module separat als Production Build gebaut werden.
+
+Beispiel fuer `rps`:
+
+```powershell
+npm run build -- rps --configuration production
+```
+
+Weitere Beispiele:
+
+```powershell
+npm run build -- qbm-app-landingpage --configuration production
+npm run build -- qer-app-operationssupport --configuration production
+npm run build -- qer-app-pwdportal --configuration production
+```
+
+Regel:
 
 ```text
-dist\<project>\*
+Nur Module bauen und deployen, die durch die Aenderung betroffen sind.
+Wenn ein Zusatzmodul betroffen ist, bekommt es ein eigenes Html_<module>.zip.
 ```
 
-This is important. The ZIP must contain the files inside the `dist\<project>` folder, not the `dist\<project>` folder itself.
+## ZIP-Pakete Erstellen
 
-## Verify The ZIP Files
+Nach dem Build liegen die Ergebnisse unter:
 
-After the build, list the created ZIP files:
-
-```powershell
-Get-ChildItem C:\oim-web-zips\*.zip | Sort-Object Name
+```text
+imxweb\dist\<project>
 ```
 
-If you used the Desktop output directory:
+Diese Dateien muessen manuell in eine ZIP-Datei gepackt werden. Fuer das API-Server-Deployment wird pro gebautem Projekt eine ZIP-Datei mit dem Namensschema `Html_<project>.zip` erstellt.
 
-```powershell
-Get-ChildItem C:\Users\RPCIA984\Desktop\oim-web-zips\*.zip | Sort-Object Name
+Wichtig: In der ZIP-Datei muss der Inhalt des jeweiligen `dist\<project>` Ordners liegen, nicht der Ordner `dist\<project>` selbst.
+
+Beispiel fuer `qer-app-portal`:
+
+```text
+Quelle:
+imxweb\dist\qer-app-portal\*
+
+Ziel:
+Html_qer-app-portal.zip
 ```
 
-Check one ZIP file:
-
-```powershell
-Expand-Archive C:\oim-web-zips\Html_qer-app-portal.zip -DestinationPath C:\Temp\Html_qer-app-portal-check -Force
-Get-ChildItem C:\Temp\Html_qer-app-portal-check
-```
-
-The extracted folder should directly contain files such as:
+Die ZIP-Datei muss nach dem Entpacken direkt Dateien und Ordner wie diese enthalten:
 
 ```text
 index.html
@@ -184,125 +110,178 @@ polyfills*.js
 assets
 ```
 
-## Software Loader Import
-
-Use the One Identity Software Loader for the import.
-
-Recommended DEV workflow:
+Fuer zusaetzliche Module gilt dasselbe Prinzip:
 
 ```text
-1. Start Software Loader.
-2. Connect to the DEV One Identity Manager database.
-3. Select the generated Html_*.zip files.
-4. Assign the machine role: Business API Server.
-5. Run the import.
-6. Restart or recycle the API Server IIS application pool.
-7. Test the DEV portal.
+dist\rps\*  -> Html_rps.zip
+dist\tsb\*  -> Html_tsb.zip
+dist\aad\*  -> Html_aad.zip
 ```
 
-Machine role:
+Die ZIPs koennen mit einem normalen ZIP-Tool erstellt werden.
+
+Manueller Ablauf:
 
 ```text
-Business API Server
+1. Nach dem Build den Ordner imxweb\dist\<project> oeffnen.
+2. Alle Dateien und Ordner innerhalb von dist\<project> markieren.
+3. Die markierten Inhalte als ZIP packen.
+4. Die ZIP nach dem Projekt benennen, z. B. Html_qer-app-portal.zip.
+5. Die fertige ZIP auf den API Server kopieren.
 ```
 
-## Manual Server Folder Check
+## Welche ZIPs Muessen Auf Den API Server
 
-Depending on the environment, the web packages may also be visible or staged under the API Server installation, for example:
+Deploye immer alle Pakete, die zur geaenderten Funktion gehoeren.
+
+Standardfall Portal:
 
 ```text
-<OIM installation>\bin\imxweb\custom
+Html_qer-app-portal.zip
 ```
 
-Do not manually overwrite production files unless the deployment process for the environment explicitly requires it.
-
-## DEV Test Checklist
-
-After importing the packages and recycling the API Server app pool, test:
+Wenn zusaetzlich `rps` betroffen ist:
 
 ```text
-1. Open the DEV portal in an incognito/private browser window.
-2. Log in successfully.
-3. Open the dashboard/start page.
-4. Open the IT Shop.
-5. Open a product detail view.
-6. Open Operations Support Portal if it is used.
-7. Open the landing page if it is used.
-8. Check the browser developer console for JavaScript errors.
-9. Check API Server logs for server-side errors.
+Html_qer-app-portal.zip
+Html_rps.zip
 ```
 
-Use a hard browser refresh if the old web client still appears:
+Wenn weitere Web-Anwendungen betroffen sind:
 
 ```text
-Ctrl + F5
+Html_qer-app-operationssupport.zip
+Html_qer-app-pwdportal.zip
+Html_qbm-app-landingpage.zip
 ```
 
-## Recommended Rollout Strategy
+Bei Plugin-Libraries muessen die Plugin-ZIPs und abhaengige Plugin-ZIPs ebenfalls konsistent deployed werden.
 
-Deploy vendor and custom code in two separate steps when possible.
+## Deployment Auf Dem API Server
 
-First deploy the clean vendor build:
-
-```powershell
-cd C:\Users\RPCIA984\Desktop\Project\IdentityManager.Imx\imxweb
-git checkout v9.2.2
-C:\Users\RPCIA984\Desktop\build-oim-web-zips.ps1 -OutputDir C:\Users\RPCIA984\Desktop\oim-web-zips-vendor
-```
-
-Import and test the vendor ZIPs.
-
-Then deploy the customized build:
-
-```powershell
-cd C:\Users\RPCIA984\Desktop\Project\IdentityManager.Imx\imxweb
-git checkout v92_build
-C:\Users\RPCIA984\Desktop\build-oim-web-zips.ps1 -SkipInstall -OutputDir C:\Users\RPCIA984\Desktop\oim-web-zips-custom
-```
-
-Import and test the customized ZIPs.
-
-This makes troubleshooting easier:
+Die installierte Standardversion liegt auf dem API Server unter:
 
 ```text
-Vendor build works, custom build fails  -> check custom changes.
-Vendor build fails                      -> check environment, package import, or OIM compatibility.
+C:\inetpub\wwwroot\ApiServer\bin\imxweb
+```
+
+Custom Deployments werden nicht in diesen Basisordner kopiert. Die erzeugten `Html_*.zip` Dateien werden nur in den `custom`-Ordner unterhalb des `imxweb`-Ordners kopiert.
+
+Zielpfad auf dem API Server:
+
+```text
+C:\inetpub\wwwroot\ApiServer\bin\imxweb\custom
+```
+
+Der API Server laedt bei Custom Deployments die Pakete aus dem `custom`-Ordner. Dadurch haben die Custom-Pakete Vorrang vor der installierten Basisversion.
+
+Wichtig: Dateien unter `C:\inetpub\wwwroot\ApiServer\bin\imxweb` duerfen nicht geloescht oder ueberschrieben werden. Nur der Ordner `C:\inetpub\wwwroot\ApiServer\bin\imxweb\custom` wird fuer Custom ZIPs verwendet.
+
+Vor dem Kopieren:
+
+```text
+1. Zielumgebung pruefen: DEV, QS oder PROD.
+2. API-Server-Pfad `C:\inetpub\wwwroot\ApiServer\bin\imxweb\custom` pruefen.
+3. Vorhandene Html_*.zip Dateien sichern.
+4. Sicherstellen, dass keine falsche Version gemischt wird.
+5. Falls der custom-Ordner fehlt, nach Betriebsprozess anlegen oder vom API-Server-Verantwortlichen bereitstellen lassen.
+6. Keine Dateien im Basisordner `C:\inetpub\wwwroot\ApiServer\bin\imxweb` loeschen oder ersetzen.
+```
+
+Deployment-Ablauf:
+
+```text
+1. API Server / IIS Application Pool stoppen oder recyceln, je nach Betriebsprozess.
+2. Die neuen Html_*.zip Dateien nach `C:\inetpub\wwwroot\ApiServer\bin\imxweb\custom` kopieren.
+3. Gleichnamige alte ZIP-Dateien ersetzen.
+4. API Server / IIS Application Pool starten oder recyceln.
+5. DEV Portal testen.
+```
+
+Es werden keine Dateien manuell in Unterordner entpackt. Deployed werden die ZIP-Dateien selbst.
+Der Basisordner `C:\inetpub\wwwroot\ApiServer\bin\imxweb` bleibt unveraendert.
+
+## DEV Testcheckliste
+
+Nach dem Kopieren der ZIPs und dem Neustart des API Servers pruefen:
+
+```text
+1. DEV Portal in einem privaten Browserfenster oeffnen.
+2. Login durchfuehren.
+3. Startseite/Dashboard oeffnen.
+4. IT Shop oeffnen.
+5. Produktdetails oeffnen.
+6. Operations Support Portal testen, falls verwendet.
+7. Password Reset Portal testen, falls verwendet.
+8. Landing Page / Server Administration testen, falls verwendet.
+9. Browser Developer Console auf JavaScript-Fehler pruefen.
+10. API Server Logs auf serverseitige Fehler pruefen.
+```
+
+## Custom Packages Pruefen
+
+Im One Identity Manager Administration Portal des API Servers kann geprueft werden, ob die Custom ZIPs geladen wurden.
+
+Aufruf:
+
+```text
+https://<api-server>/ApiServer/html/qbm-app-landingpage/#/admin/packages
+```
+
+Pruefung:
+
+```text
+1. Administration Portal oeffnen.
+2. Links den Menuepunkt Packages oeffnen.
+3. Das betroffene Paket suchen, z. B. qer-app-portal oder rps.
+4. Pruefen, ob beim Paket der Hinweis Custom package angezeigt wird.
+5. Pruefen, ob der Relative path auf imxweb\custom\<zip-name>.zip zeigt.
+6. Last changed on und Checksum mit dem Deployment abgleichen.
+```
+
+Beispiele fuer korrekt geladene Custom Packages:
+
+```text
+qer-app-portal -> imxweb\custom\Html_qer-app-portal.zip
+rps            -> imxweb\custom\Html_rps.zip
+```
+
+Wenn noch der alte Web Client angezeigt wird:
+
+```text
+1. API Server / IIS Application Pool erneut recyceln.
+2. Browser Cache leeren oder privates Fenster verwenden.
+3. Mit Ctrl + F5 hart neu laden.
+4. Pruefen, ob die neuen Html_*.zip Dateien wirklich unter `C:\inetpub\wwwroot\ApiServer\bin\imxweb\custom` liegen.
+5. Pruefen, ob keine alten ZIPs mit gleichem Namen aus einem anderen Pfad verwendet werden.
 ```
 
 ## Troubleshooting
 
-If the build fails, check the project printed directly before the error:
+Wenn ein Build fehlschlaegt:
 
 ```text
-==> Building qer-app-portal
+1. Das zuletzt gebaute Projekt in der Konsole pruefen.
+2. Nur dieses Projekt erneut bauen, z. B. npm run build -- qer-app-portal --configuration production.
+3. Falls eine Library angepasst wurde, abhaengige Apps erneut bauen.
 ```
 
-Then rerun only the failing command manually:
-
-```powershell
-npm run build qer-app-portal
-```
-
-If `npm install` fails, rerun:
-
-```powershell
-npm install
-```
-
-If the portal still shows the old version:
+Wenn das Portal nach Deployment nicht startet:
 
 ```text
-1. Recycle the API Server IIS app pool.
-2. Clear browser cache or use incognito mode.
-3. Verify that the Html_*.zip files were imported with the Business API Server machine role.
-4. Check whether the correct DEV database was selected in Software Loader.
+1. API Server Logs pruefen.
+2. Browser Console pruefen.
+3. Sicherstellen, dass alle benoetigten Modul-ZIPs und App-ZIPs unter `C:\inetpub\wwwroot\ApiServer\bin\imxweb\custom` liegen.
+4. ZIP-Inhalt pruefen: Inhalt von dist\<project>, nicht der dist-Ordner selbst.
+5. API Server / IIS Application Pool recyceln.
+6. Browser Cache leeren.
 ```
 
-If a ZIP import fails in Software Loader:
+Wenn eine Funktion fehlt oder weiterhin alt aussieht:
 
 ```text
-1. Confirm the ZIP name starts with Html_.
-2. Confirm the ZIP contains the dist content directly.
-3. Confirm the target system is OIM 9.2.2 when deploying v92/v9.2.2 packages.
-4. Rebuild the failed package and import it again.
+1. Pruefen, ob der richtige Git-Branch gebaut wurde.
+2. Pruefen, ob das richtige Projekt neu gebaut wurde.
+3. Pruefen, ob die richtige ZIP-Datei auf dem API Server ersetzt wurde.
+4. Pruefen, ob abhaengige Apps ebenfalls neu gebaut und deployed wurden.
 ```

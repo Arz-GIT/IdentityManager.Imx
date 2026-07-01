@@ -1,0 +1,24 @@
+Angular Upgrade to v100
+
+- Existing v92_build customizations cannot be transferred directly to v100.
+- All Angular customizations must be adapted to the new v100 component, module, service, and API structure.
+- The login page has changed significantly and the custom login hint must be reimplemented.
+- Product Details, Service Category information, and the System Role hint require manual code adaptation.
+- Shop and RPS admin restrictions must be aligned with the new authorization and guard structure.
+- The Password Questions tile customization must be located and implemented in the new dashboard structure.
+- A new Angular build and complete functional validation are required.
+
+Environment Preparation
+
+- The upgrade covers nine environments:
+  - Development: 1
+  - Test: 002, 044, 019, RFX
+  - Production: corresponding environments for 002, 044, 019, RFX
+- Required backend entries and customer-specific settings must be prepared manually.
+- API Server settings must be reviewed and configured separately for each environment.
+- Customer environments may have different configurations, permissions, and technical conditions.
+- Deployment and validation must therefore be performed individually for every environment.
+- Test environments must be upgraded and approved before the corresponding production rollout.
+- Login, Shop, Product Details, Reports, permissions, and password functionality must be validated after each deployment.
+
+These manual code adaptations, environment-specific preparations, and validation steps explain the additional time required for the v100 upgrade.
