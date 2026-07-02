@@ -39,7 +39,7 @@ import {
   MethodDescriptor,
   WriteExtTypedEntity,
 } from '@imx-modules/imx-qbm-dbts';
-import { DynamicMethodService, ExtService, HELP_CONTEXTUAL, ImxTranslationProviderService, MenuService, imx_SessionService } from 'qbm';
+import { DynamicMethodService, HELP_CONTEXTUAL, ImxTranslationProviderService, MenuService, imx_SessionService } from 'qbm';
 import {
   BaseTreeEntitlement,
   BaseTreeRoleRestoreHandler,
@@ -57,7 +57,6 @@ import {
 import { OrgDataModel } from './org-data-model';
 import { OrgMembership } from './org-membership';
 import { RmbApiService } from './rmb-api-client.service';
-import { TeamRoleComponent } from './team-role/team-role.component';
 
 @Injectable({ providedIn: 'root' })
 export class InitService {
@@ -75,7 +74,6 @@ export class InitService {
     private readonly roleService: RoleService,
     private readonly identityRoleMembershipService: IdentityRoleMembershipsService,
     private readonly myResponsibilitiesRegistryService: MyResponsibilitiesRegistryService,
-    private readonly extService: ExtService,
     private readonly qerPermissionsService: QerPermissionsService,
   ) {}
 
@@ -220,7 +218,6 @@ export class InitService {
       },
       contextId: HELP_CONTEXTUAL.MyResponsibilitiesBusinessRoles,
     }));
-    this.extService.register('Dashboard-MediumTiles', { instance: TeamRoleComponent });
   }
 
   private setupMenu(): void {
