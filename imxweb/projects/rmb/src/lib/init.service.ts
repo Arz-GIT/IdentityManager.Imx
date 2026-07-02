@@ -27,7 +27,7 @@
 import { Injectable } from '@angular/core';
 import { Route, Router } from '@angular/router';
 
-import { DynamicMethodService, ImxTranslationProviderService, imx_SessionService, MenuService, ExtService, HELP_CONTEXTUAL } from 'qbm';
+import { DynamicMethodService, ImxTranslationProviderService, imx_SessionService, MenuService, HELP_CONTEXTUAL } from 'qbm';
 import { PortalAdminRoleOrg, PortalPersonRolemembershipsOrg, PortalRespOrg, V2ApiClientMethodFactory } from 'imx-api-rmb';
 import {
   BaseTreeEntitlement,
@@ -55,7 +55,6 @@ import {
   MethodDefinition,
 } from 'imx-qbm-dbts';
 import { RoleExtendedDataWrite } from 'imx-api-qer';
-import { TeamRoleComponent } from './team-role/team-role.component';
 import { ProjectConfig } from 'imx-api-qbm';
 
 @Injectable({ providedIn: 'root' })
@@ -74,8 +73,7 @@ export class InitService {
     private readonly menuService: MenuService,
     private readonly roleService: RoleService,
     private readonly identityRoleMembershipService: IdentityRoleMembershipsService,
-    private readonly myResponsibilitiesRegistryService: MyResponsibilitiesRegistryService,
-    private readonly extService: ExtService
+    private readonly myResponsibilitiesRegistryService: MyResponsibilitiesRegistryService
   ) {}
 
   public onInit(routes: Route[]): void {
@@ -219,7 +217,6 @@ export class InitService {
       },
       contextId: HELP_CONTEXTUAL.MyResponsibilitiesBusinessRoles,
     }));
-    this.extService.register('Dashboard-MediumTiles', { instance: TeamRoleComponent });
   }
 
   private setupMenu(): void {
