@@ -109,15 +109,18 @@ export class NewRequestContentComponent implements OnInit, OnDestroy {
     const projectConfig = await this.projectConfigService.getConfig();
     const canSelectFromTemplate = projectConfig.ITShopConfig.VI_ITShop_ProductSelectionFromTemplate;
     const canSelectByRefUser = projectConfig.ITShopConfig.VI_ITShop_ProductSelectionByReferenceUser;
+    const showRecommendedProducts = false;
 
     if (canSelectByRefUser) {
-      this.navLinks.push({
-        id: 1,
-        title: '#LDS#Heading Recommended Products',
-        component: NewRequestPeerGroupComponent,
-        link: 'productsByPeerGroup',
-        active: false,
-      });
+      if (showRecommendedProducts) {
+        this.navLinks.push({
+          id: 1,
+          title: '#LDS#Heading Recommended Products',
+          component: NewRequestPeerGroupComponent,
+          link: 'productsByPeerGroup',
+          active: false,
+        });
+      }
       this.navLinks.push({
         id: 2,
         title: '#LDS#Heading Products by Reference User',
