@@ -37,7 +37,6 @@ import { calculateSidesheetWidth, LdsReplacePipe } from 'qbm';
 import { ProjectConfigurationService } from '../../project-configuration/project-configuration.service';
 import { NewRequestAddToCartService } from '../new-request-add-to-cart.service';
 import { NewRequestOrchestrationService } from '../new-request-orchestration.service';
-import { NewRequestPeerGroupComponent } from '../new-request-peer-group/new-request-peer-group.component';
 import { NewRequestProductBundleComponent } from '../new-request-product-bundle/new-request-product-bundle.component';
 import { NewRequestProductComponent } from '../new-request-product/new-request-product.component';
 import { NewRequestReferenceUserComponent } from '../new-request-reference-user/new-request-reference-user.component';
@@ -59,7 +58,6 @@ export class NewRequestContentComponent implements OnDestroy {
   public catSlider: MatSlideToggle;
   public showCatSlider = false;
   public selectedCategory: PortalServicecategories;
-  public peerGroupEnabled = true;
 
   constructor(
     public readonly orchestration: NewRequestOrchestrationService,
@@ -137,7 +135,6 @@ export class NewRequestContentComponent implements OnDestroy {
     const projectConfig = await this.projectConfigService.getConfig();
     const canSelectFromTemplate = projectConfig.ITShopConfig?.VI_ITShop_ProductSelectionFromTemplate;
     const canSelectByRefUser = projectConfig.ITShopConfig?.VI_ITShop_ProductSelectionByReferenceUser;
-    const canSelectByPeerGroup = projectConfig.ITShopConfig?.ProductSelectionByPeerGroup ?? true;
 
     this.navLinks.push({
       id: 0,
@@ -146,16 +143,6 @@ export class NewRequestContentComponent implements OnDestroy {
       link: 'allProducts',
       active: true,
     });
-
-    if (canSelectByPeerGroup) {
-      this.navLinks.push({
-        id: 1,
-        title: '#LDS#Heading Recommended Products',
-        component: NewRequestPeerGroupComponent,
-        link: 'productsByPeerGroup',
-        active: false,
-      });
-    }
 
     if (canSelectByRefUser) {
       this.navLinks.push({
