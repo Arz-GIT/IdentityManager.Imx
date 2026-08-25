@@ -17,6 +17,15 @@
           {{ '#LDS#Create delegation for another identity' | translate }}
         </mat-radio-button>
       </mat-radio-group>
+      @if (withSubordinates) {
+        <mat-checkbox
+          [(ngModel)]="onlyDirectReports"
+          data-imx-identifier="delegation-only-direct-reports"
+          (change)="resetDelegation()"
+        >
+          {{ '#LDS#Show only direct reports' | translate }}
+        </mat-checkbox>
+      }
     }
     <mat-stepper
       [ngClass]="{ hidden: completed }"

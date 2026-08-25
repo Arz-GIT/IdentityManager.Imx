@@ -100,6 +100,7 @@ export class DelegationComponent implements OnInit, OnDestroy {
   public state: string | undefined;
 
   public withSubordinates = false;
+  public onlyDirectReports = true;
   public isManager = false;
   public cdrPersonSender: ColumnDependentReference;
 
@@ -437,7 +438,7 @@ export class DelegationComponent implements OnInit, OnDestroy {
    */
   private initSenderForm(): void {
     this.senderFormGroup = new UntypedFormGroup({});
-    this.cdrPersonSender = new BaseCdr(this.newDelegation.UID_PersonSender.Column);
+    this.cdrPersonSender = this.delegationService.buildSenderCdr(this.newDelegation, this.onlyDirectReports);
   }
 
   /**
