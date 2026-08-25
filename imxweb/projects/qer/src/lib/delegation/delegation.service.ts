@@ -69,11 +69,19 @@ export class DelegationService {
     return (await this.qerApiService.typedClient.PortalDelegationsGlobalRoleclasses.Get(uidUser, { PageSize: 1024 })).Data;
   }
 
-  public buildSenderCdr(entity: PortalDelegations) {
+  public buildSenderCdr(entity: PortalDelegations, onlyDirect: boolean) {
     const schema = this.getDelegationSchema();
     const fkProviderItems = this.qerApiService.client.getFkProviderItems('portal/delegations').map((item) => ({
       ...item,
-      load: (_, parameters = {}) => this.qerApiService.client.portal_person_reports_get({ ...parameters, OnlyDirect: true }),
+      load: async (_, parameters = {}) => {
+        const requestParameters = { ...parameters, OnlyDirect: onlyDirect };
+        console.log('[Delegation] portal/person/reports request', requestParameters);
+
+        const response = await this.qerApiService.client.portal_person_reports_get(requestParameters);
+        console.log('[Delegation] portal/person/reports response', response);
+
+        return response;
+      },
       getDataModel: async (entity) => item.getDataModel(entity),
       getFilterTree: async (entity, parentKey) => item.getFilterTree(entity, parentKey),
     }));

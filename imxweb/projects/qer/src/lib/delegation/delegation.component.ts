@@ -91,6 +91,7 @@ export class DelegationComponent implements OnInit, OnDestroy {
   public state: string;
 
   public withSubordinates = false;
+  public onlyDirectReports = true;
   public isManager = false;
   public cdrPersonSender: ColumnDependentReference;
 
@@ -418,8 +419,8 @@ export class DelegationComponent implements OnInit, OnDestroy {
    * Inits the 'Select the identity which responsibilities you like to delegate' form
    */
   private initSenderForm(): void {
-    Object.keys(this.senderFormGroup.controls).forEach((name) => this.recipientFormGroup.removeControl(name));
-    this.cdrPersonSender = this.delegationService.buildSenderCdr(this.newDelegation);
+    Object.keys(this.senderFormGroup.controls).forEach((name) => this.senderFormGroup.removeControl(name));
+    this.cdrPersonSender = this.delegationService.buildSenderCdr(this.newDelegation, this.onlyDirectReports);
   }
 
   /**
