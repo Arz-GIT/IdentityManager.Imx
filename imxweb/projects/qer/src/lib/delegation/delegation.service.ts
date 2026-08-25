@@ -73,15 +73,7 @@ export class DelegationService {
     const schema = this.getDelegationSchema();
     const fkProviderItems = this.qerApiService.client.getFkProviderItems('portal/delegations').map((item) => ({
       ...item,
-      load: async (_, parameters = {}) => {
-        const requestParameters = { ...parameters, OnlyDirect: onlyDirect };
-        console.log('[Delegation] portal/person/reports request', requestParameters);
-
-        const response = await this.qerApiService.client.portal_person_reports_get(requestParameters);
-        console.log('[Delegation] portal/person/reports response', response);
-
-        return response;
-      },
+      load: (_, parameters = {}) => this.qerApiService.client.portal_person_reports_get({ ...parameters, OnlyDirect: onlyDirect }),
       getDataModel: async (entity) => item.getDataModel(entity),
       getFilterTree: async (entity, parentKey) => item.getFilterTree(entity, parentKey),
     }));
