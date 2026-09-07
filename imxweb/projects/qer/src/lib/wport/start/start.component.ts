@@ -80,7 +80,7 @@ export class StartComponent implements OnInit {
   }
 
   public ShowPasswordTile(): boolean {
-    return this.userConfig?.ShowPasswordTile;
+    return false;
   }
 
   public ShowPasswordMgmtTile(): boolean {
