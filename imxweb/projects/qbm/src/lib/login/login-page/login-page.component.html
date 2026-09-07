@@ -77,6 +77,9 @@
             </eui-form-field>
           </div>
         }
+        @if (selectedConfigProvider()?.name === 'RoleBasedManualADS') {
+          <div class="imx-login-note">{{ '#LDS#Login note' | translate }}</div>
+        }
       }
       @if (selectedProviderPreAuthState() == preAuthStateType.PreAuth) {
         @for (authProp of selectedConfigProvider()?.preAuthProps; track authProp.name) {
