@@ -34,6 +34,11 @@
     @include stepper-margin();
   }
 
+  [data-imx-identifier='delegation-only-direct-reports'] {
+    margin-left: 25px;
+    margin-bottom: 16px;
+  }
+
   .imx-delegatable-elements {
     margin-bottom: 10px;
     max-height: 600px;
