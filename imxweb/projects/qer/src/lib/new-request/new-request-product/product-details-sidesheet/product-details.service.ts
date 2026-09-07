@@ -28,10 +28,11 @@ import { Injectable } from '@angular/core';
 import { SafeUrl } from '@angular/platform-browser';
 import { EuiSidesheetService } from '@elemental-ui/core';
 import { TranslateService } from '@ngx-translate/core';
-
+import { TypedClient as RmsTypedClient, V2Client as RmsV2Client } from '@imx-modules/imx-api-rms';
 import { PortalServicecategories } from '@imx-modules/imx-api-qer';
-import { IWriteValue, MultiValue, TypedEntity } from '@imx-modules/imx-qbm-dbts';
-import { LdsReplacePipe, calculateSidesheetWidth } from 'qbm';
+
+import { CompareOperator, FilterType, IWriteValue, MultiValue, TypedEntity } from '@imx-modules/imx-qbm-dbts';
+import { AppConfigService, ClassloggerService, ImxTranslationProviderService, LdsReplacePipe, calculateSidesheetWidth } from 'qbm';
 import { ImageService } from '../../../itshop/image.service';
 import { ProjectConfigurationService } from '../../../project-configuration/project-configuration.service';
 import { ServiceCategoriesService } from '../../../service-categories/service-categories.service';
@@ -41,6 +42,8 @@ import { ProductDetailsSidesheetComponent } from './product-details-sidesheet.co
   providedIn: 'root',
 })
 export class ProductDetailsService {
+  private rmsTypedClient?: RmsTypedClient;
+
   constructor(
     private readonly image: ImageService,
     private readonly ldsReplace: LdsReplacePipe,
@@ -48,12 +51,23 @@ export class ProductDetailsService {
     private readonly translateService: TranslateService,
     private readonly projectConfigService: ProjectConfigurationService,
     private readonly serviceCategoriesService: ServiceCategoriesService,
-  ) {}
+    private readonly appConfig: AppConfigService,
+    private readonly logger: ClassloggerService,
+    private readonly translationProvider: ImxTranslationProviderService,
+  ) {
+    try {
+      const rmsClient = new RmsV2Client(this.appConfig.apiClient, this.appConfig.client);
+      this.rmsTypedClient = new RmsTypedClient(rmsClient, this.translationProvider);
+    } catch (error) {
+      this.logger.error(this, error);
+    }
+  }
 
   public async showProductDetails(item: TypedEntity, recipients: IWriteValue<string>): Promise<void> {
     const projectConfig = await this.projectConfigService.getConfig();
 
     const orderStatus = await this.getOrderStatus(item, recipients);
+    const sysAdminComment = await this.getSysAdminComment(item);
     const serviceCategoryDetails = await this.getServiceCategoryDetails(item);
     await this.sidesheetService
       .open(ProductDetailsSidesheetComponent, {
@@ -65,11 +79,12 @@ export class ProductDetailsService {
         testId: 'product-details-sidesheet',
         data: {
           item,
-          serviceCategory: serviceCategoryDetails.serviceCategory,
-          parentServiceCategory: serviceCategoryDetails.parentServiceCategory,
           orderStatus: orderStatus,
           imageUrl: this.getProductImage(item),
           projectConfig,
+          sysAdminComment,
+          serviceCategory: serviceCategoryDetails.serviceCategory,
+          parentServiceCategory: serviceCategoryDetails.parentServiceCategory,
         },
       })
       .afterClosed()
@@ -124,26 +139,71 @@ export class ProductDetailsService {
     }
   }
 
+  private async getSysAdminComment(item: TypedEntity): Promise<string | undefined> {
+    try {
+      const uidAccProduct = this.getUidAccProduct(item);
+      if (!uidAccProduct || !this.rmsTypedClient) {
+        return undefined;
+      }
+
+      const result = await this.rmsTypedClient.PortalAdminRoleEset.Get({
+        StartIndex: 0,
+        PageSize: 1,
+        filter: [{
+          ColumnName: 'UID_AccProduct',
+          Type: FilterType.Compare,
+          CompareOp: CompareOperator.Equal,
+          Value1: uidAccProduct,
+        }],
+        withProperties: 'Commentary',
+      });
+      const entity = result?.Data?.[0]?.GetEntity();
+      const manualFlag = this.tryGetColumnValue(entity, 'CustomProperty01');
+      const commentary = this.tryGetColumnDisplayValue(entity, 'Commentary');
+      return manualFlag?.trim().toLocaleLowerCase() === 'manuell' && commentary?.trim() ? commentary : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
   private async getServiceCategoryDetails(item: TypedEntity): Promise<{
     serviceCategory?: PortalServicecategories;
     parentServiceCategory?: PortalServicecategories;
   }> {
     try {
-      const uidAccProductGroup = item.GetEntity().GetColumn('UID_AccProductGroup').GetValue() as string;
-      if (!uidAccProductGroup) {
-        return {};
-      }
-
-      const serviceCategory = (await this.serviceCategoriesService.getById(uidAccProductGroup))?.Data?.[0];
+      const uid = item.GetEntity().GetColumn('UID_AccProductGroup').GetValue() as string;
+      if (!uid) return {};
+      const serviceCategory = (await this.serviceCategoriesService.getById(uid))?.Data?.[0];
       const parentUid = serviceCategory?.UID_AccProductGroupParent?.value;
-      if (!parentUid) {
-        return { serviceCategory };
-      }
-
+      if (!parentUid) return { serviceCategory };
       const parentServiceCategory = (await this.serviceCategoriesService.getById(parentUid))?.Data?.[0];
       return { serviceCategory, parentServiceCategory };
     } catch {
       return {};
+    }
+  }
+
+  private getUidAccProduct(item: TypedEntity): string | undefined {
+    try {
+      return item.GetEntity().GetColumn('UID_AccProduct')?.GetValue() || item.GetEntity().GetKeys()?.[0];
+    } catch {
+      return item.GetEntity().GetKeys()?.[0];
+    }
+  }
+
+  private tryGetColumnDisplayValue(entity: any, columnName: string): string | undefined {
+    try {
+      return entity?.GetColumn?.(columnName)?.GetDisplayValue?.();
+    } catch {
+      return undefined;
+    }
+  }
+
+  private tryGetColumnValue(entity: any, columnName: string): string | undefined {
+    try {
+      return entity?.GetColumn?.(columnName)?.GetValue?.();
+    } catch {
+      return undefined;
     }
   }
 }
