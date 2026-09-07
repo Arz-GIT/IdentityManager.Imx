@@ -28,10 +28,12 @@ import { Clipboard } from '@angular/cdk/clipboard';
 import { Component, Inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { EUI_SIDESHEET_DATA } from '@elemental-ui/core';
-import { PortalServiceitems, QerProjectConfig } from '@imx-modules/imx-api-qer';
+import { PortalServicecategories, PortalServiceitems, QerProjectConfig } from '@imx-modules/imx-api-qer';
 import { TranslateService } from '@ngx-translate/core';
 import { HELP_CONTEXTUAL, LdsReplacePipe, SnackBarService } from 'qbm';
 import { NEW_REQUEST_ROUTE } from '../../constants';
+
+type ServiceCategoryLabel = 'applicationDescription' | 'helpText' | 'applicationFilterDescription' | 'filterHelpText';
 
 @Component({
     selector: 'imx-product-details-sidesheet',
@@ -65,6 +67,8 @@ export class ProductDetailsSidesheetComponent implements OnInit {
     @Inject(EUI_SIDESHEET_DATA)
     public data: {
       item: PortalServiceitems;
+      serviceCategory?: PortalServicecategories;
+      parentServiceCategory?: PortalServicecategories;
       orderStatus: {
         statusIcon: string;
         statusDisplay: string;
@@ -93,6 +97,17 @@ export class ProductDetailsSidesheetComponent implements OnInit {
   /** Returns the caption for the given property/column. */
   protected getCaption(column: string): string {
     return this.data.item.GetEntity().GetColumn(column).GetMetadata().GetDisplay();
+  }
+
+  protected getServiceCategoryLabel(label: ServiceCategoryLabel): string {
+    const isGerman = this.translate.currentLang?.toLowerCase().startsWith('de');
+    const labels: Record<ServiceCategoryLabel, { de: string; en: string }> = {
+      applicationDescription: { de: 'Applikationbeschreibung', en: 'Application description' },
+      helpText: { de: 'Hilfetext', en: 'Help text' },
+      applicationFilterDescription: { de: 'Filter Anwendungsbeschr.', en: 'Application filter description' },
+      filterHelpText: { de: 'Filter Hilfetext', en: 'Filter Help text' },
+    };
+    return labels[label][isGerman ? 'de' : 'en'];
   }
 
   /** Returns a special css class for the given property/column.  */
